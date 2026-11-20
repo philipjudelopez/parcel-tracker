@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,7 +35,6 @@
     </nav>
   </header>
 
-  <!-- HERO -->
   <section class="hero" id="home">
     <div class="hero-content">
       <span class="hero-label">MINDANAO PARCEL MONITORING</span>
@@ -63,7 +63,6 @@
 
   <main class="main-container">
 
-    <!-- TRACKING DETAILS -->
     <section class="section" id="tracking">
       <div class="section-heading">
         <span class="section-label">SHIPMENT INFORMATION</span>
@@ -110,12 +109,11 @@
       </div>
     </section>
 
-    <!-- ADD PARCEL -->
     <section class="section" id="add-parcel">
       <div class="section-heading">
         <span class="section-label">PARCEL MANAGEMENT</span>
         <h2>Add a New Parcel</h2>
-        <p>Register a shipment and create its delivery route.</p>
+        <p>Enter any origin and destination in Mindanao to create its delivery route.</p>
       </div>
 
       <div class="form-card">
@@ -134,28 +132,24 @@
           <div class="form-row">
             <div class="form-group">
               <label for="parcel-origin">Origin</label>
-              <select id="parcel-origin" required>
-                <option value="">Select origin</option>
-                <option value="davao">Davao City</option>
-                <option value="manolo">Manolo Fortich</option>
-                <option value="cdo">Cagayan de Oro</option>
-                <option value="iligan">Iligan City</option>
-                <option value="butuan">Butuan City</option>
-                <option value="gensan">General Santos City</option>
-              </select>
+              <input
+                id="parcel-origin"
+                type="text"
+                placeholder="e.g. Barangay Poblacion, Malaybalay City"
+                autocomplete="off"
+                required
+              >
             </div>
 
             <div class="form-group">
               <label for="parcel-destination">Destination</label>
-              <select id="parcel-destination" required>
-                <option value="">Select destination</option>
-                <option value="davao">Davao City</option>
-                <option value="manolo">Manolo Fortich</option>
-                <option value="cdo">Cagayan de Oro</option>
-                <option value="iligan">Iligan City</option>
-                <option value="butuan">Butuan City</option>
-                <option value="gensan">General Santos City</option>
-              </select>
+              <input
+                id="parcel-destination"
+                type="text"
+                placeholder="e.g. Barangay Carmen, Cagayan de Oro"
+                autocomplete="off"
+                required
+              >
             </div>
           </div>
 
@@ -168,7 +162,6 @@
       </div>
     </section>
 
-    <!-- REGISTERED PARCELS -->
     <section class="section">
       <div class="section-heading">
         <span class="section-label">SHIPMENT RECORDS</span>
@@ -179,7 +172,6 @@
       <div id="parcel-list" class="parcel-list"></div>
     </section>
 
-    <!-- ROUTE TIMELINE -->
     <section class="section" id="route">
       <div class="section-heading">
         <span class="section-label">PARCEL JOURNEY</span>
@@ -190,7 +182,6 @@
       <div class="route-track" id="route-track"></div>
     </section>
 
-    <!-- LEAFLET MAP -->
     <section class="section">
       <div class="section-heading">
         <span class="section-label">ROUTE VISUALIZATION</span>
@@ -218,7 +209,6 @@
       </div>
     </section>
 
-    <!-- WEATHER -->
     <section class="section" id="weather">
       <div class="section-heading">
         <span class="section-label">OPENWEATHER MONITORING</span>
@@ -254,78 +244,50 @@
           <p class="weather-loading">Loading weather...</p>
         </article>
       </div>
-
-      <p class="weather-note">
-        Weather data provided by OpenWeatherMap.
-      </p>
     </section>
 
-    <!-- API SETTINGS -->
     <section class="section" id="settings">
       <div class="section-heading">
-        <span class="section-label">CONFIGURATION</span>
-        <h2>API Key Settings</h2>
-        <p>Configure your OpenWeatherMap API key for weather updates.</p>
+        <span class="section-label">API CONFIGURATION</span>
+        <h2>Weather API Settings</h2>
+        <p>Enter your OpenWeatherMap API key to activate live weather monitoring.</p>
       </div>
 
       <div class="form-card settings-card">
         <form id="api-key-form">
           <div class="form-group">
             <label for="api-key-input">OpenWeatherMap API Key</label>
-
             <div class="api-input-row">
               <input
                 type="password"
                 id="api-key-input"
-                placeholder="Enter your OpenWeatherMap API key"
+                placeholder="Enter your API key"
                 autocomplete="off"
               >
-
-              <button
-                type="button"
-                id="toggle-api-key"
-                class="secondary-button"
-              >
+              <button type="button" id="toggle-api-key" class="secondary-button">
                 Show
               </button>
             </div>
           </div>
 
           <div class="settings-actions">
-            <button type="submit" class="primary-button">
-              Save API Key
-            </button>
-
-            <button
-              type="button"
-              id="remove-api-key"
-              class="danger-button"
-            >
+            <button type="submit" class="primary-button">Save API Key</button>
+            <button type="button" id="remove-api-key" class="delete-button">
               Remove Key
             </button>
           </div>
 
           <p id="api-key-message" class="form-message-dark" aria-live="polite"></p>
         </form>
-
-        <div class="security-note">
-          <strong>Security reminder</strong>
-          <p>
-            This prototype stores the API key in your browser's local storage.
-            It is not secure for public deployment because visitors can inspect
-            browser data and network requests. Use a backend to protect the key
-            before publishing the website.
-          </p>
-        </div>
       </div>
     </section>
 
   </main>
 
   <footer class="footer">
-    <h3>📦 ParcelTrack Mindanao</h3>
-    <p>Connecting deliveries across Mindanao, Philippines.</p>
-    <small>© 2026 ParcelTrack. All rights reserved.</small>
+    <strong>ParcelTrack Mindanao</strong>
+    <p>Parcel route monitoring and weather information for Mindanao, Philippines.</p>
+    <small>Mapping by OpenStreetMap contributors. Weather by OpenWeatherMap.</small>
   </footer>
 
   <script
@@ -333,6 +295,5 @@
     crossorigin=""
   ></script>
   <script src="script.js"></script>
-
 </body>
 </html>

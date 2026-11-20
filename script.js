@@ -51,6 +51,39 @@ const locations = {
   }
 };
 
+const CUSTOM_LOCATIONS_STORAGE_KEY = "parceltrack_custom_locations";
+
+function loadCustomLocations() {
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem(CUSTOM_LOCATIONS_STORAGE_KEY) || "{}"
+    );
+
+    return saved && typeof saved === "object" && !Array.isArray(saved)
+      ? saved
+      : {};
+  } catch (error) {
+    console.warn("Could not load saved custom locations:", error);
+    return {};
+  }
+}
+
+// Restore geocoded locations so saved parcels still work after refreshing.
+Object.assign(locations, loadCustomLocations());
+
+function saveCustomLocations() {
+  const custom = Object.fromEntries(
+    Object.entries(locations).filter(([key]) =>
+      key.startsWith("custom_")
+    )
+  );
+
+  localStorage.setItem(
+    CUSTOM_LOCATIONS_STORAGE_KEY,
+    JSON.stringify(custom)
+  );
+}
+
 
 /* ==========================================
    2. SAMPLE PARCELS
@@ -148,11 +181,6 @@ apiKeyForm.addEventListener("submit", function(event) {
     apiKeyMessage.textContent = "API key saved successfully.";
 
     loadAllWeather();
-
-    if (selectedTrackingNumber) {
-      updateMap(parcels[selectedTrackingNumber], null);
-    }
-
   } catch (error) {
     apiKeyMessage.textContent =
       "Could not save API key in this browser.";
@@ -179,10 +207,6 @@ document
     apiKeyMessage.textContent = "API key removed.";
 
     loadAllWeather();
-
-    if (selectedTrackingNumber) {
-      updateMap(parcels[selectedTrackingNumber], null);
-    }
   });
 
 
@@ -204,7 +228,6 @@ L.tileLayer(
 const markerLayer = L.layerGroup().addTo(map);
 
 let routeLine = null;
-
 
 function createMarkerIcon(color) {
   return L.divIcon({
@@ -255,21 +278,18 @@ function createParcelRoute(parcel) {
 
   return routeKeys.map((key, index) => ({
     location: key,
-
     description:
       index === 0
         ? "Parcel received"
         : index === routeKeys.length - 1
           ? "Final destination"
           : "Parcel processed at sorting hub",
-
     detail:
       key === "manolo"
         ? "Main distribution center"
         : index === 0
           ? "Origin facility"
           : "Delivery facility",
-
     status:
       index === routeKeys.length - 1
         ? "current"
@@ -322,7 +342,6 @@ function updateMap(parcel, routeData) {
         <strong>${place.name}</strong><br>
         ${stop.description}<br>
         <small>${stop.detail}</small>
-
         <div class="pin-weather" id="pin-weather-${stop.location}">
           <strong>Weather:</strong> Loading...
         </div>
@@ -334,9 +353,10 @@ function updateMap(parcel, routeData) {
   if (coordinates.length > 1) {
     const roadCoordinates =
       routeData && routeData.geometry
-        ? routeData.geometry.coordinates.map(
-            point => [point[1], point[0]]
-          )
+        ? routeData.geometry.coordinates.map(point => [
+            point[1],
+            point[0]
+          ])
         : coordinates;
 
     routeLine = L.polyline(roadCoordinates, {
@@ -352,7 +372,6 @@ function updateMap(parcel, routeData) {
     map.fitBounds(routeLine.getBounds(), {
       padding: [45, 45]
     });
-
   } else if (coordinates.length === 1) {
     map.setView(coordinates[0], 10);
   }
@@ -378,7 +397,6 @@ function updateTimeline(parcel) {
 
     const marker = document.createElement("div");
     marker.className = "route-marker";
-
     marker.textContent =
       stop.status === "completed" ? "✓" : "●";
 
@@ -396,7 +414,6 @@ function updateTimeline(parcel) {
 
     info.append(heading, description, detail);
     element.append(marker, info);
-
     routeTrack.appendChild(element);
   });
 }
@@ -404,13 +421,11 @@ function updateTimeline(parcel) {
 
 /* ==========================================
    9. AUTOMATIC ROAD ROUTE DISTANCE
-   Uses OSRM driving directions.
+   OSRM returns a driving route distance in meters.
 ========================================== */
 
 function formatDistance(meters) {
-  if (!Number.isFinite(meters)) {
-    return "Unavailable";
-  }
+  if (!Number.isFinite(meters)) return "Unavailable";
 
   if (meters < 1000) {
     return `${Math.round(meters)} m`;
@@ -418,7 +433,6 @@ function formatDistance(meters) {
 
   return `${(meters / 1000).toFixed(1)} km`;
 }
-
 
 async function calculateRoadRoute(route) {
   const validPlaces = route
@@ -469,9 +483,7 @@ async function calculateRoadRoute(route) {
   } catch (error) {
     console.warn("Road route calculation failed:", error);
 
-    // Fallback: calculate straight-line distance.
     let distance = 0;
-
     const toRad = value => value * Math.PI / 180;
 
     for (let i = 1; i < validPlaces.length; i++) {
@@ -490,10 +502,7 @@ async function calculateRoadRoute(route) {
       distance +=
         6371000 *
         2 *
-        Math.atan2(
-          Math.sqrt(h),
-          Math.sqrt(1 - h)
-        );
+        Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
     }
 
     return {
@@ -565,16 +574,7 @@ async function displayParcel(trackingNumber) {
   distanceNote.textContent =
     "Requesting the road route between delivery locations.";
 
-  updateTimeline(parcel);
-
-  // Draw route after road-distance lookup completes.
   const routeData = await calculateRoadRoute(route);
-
-  // Avoid displaying an old result if the user selected
-  // a different parcel while the request was running.
-  if (selectedTrackingNumber !== trackingNumber) {
-    return;
-  }
 
   distanceElement.textContent =
     formatDistance(routeData.distance);
@@ -589,6 +589,7 @@ async function displayParcel(trackingNumber) {
 
   message.style.color = "#b9f3d1";
 
+  updateTimeline(parcel);
   updateMap(parcel, routeData);
   renderParcelList();
 }
@@ -620,7 +621,71 @@ document
 const addParcelForm =
   document.getElementById("add-parcel-form");
 
-addParcelForm.addEventListener("submit", function(event) {
+// Convert a user-entered place name/address into map coordinates.
+// The search area is bounded to Mindanao to preserve this site's regional focus.
+async function geocodeMindanaoPlace(placeQuery) {
+  const query = placeQuery.trim();
+
+  if (!query) {
+    throw new Error("Enter a place name or address.");
+  }
+
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    q: query,
+    limit: "5",
+    countrycodes: "ph",
+    viewbox: "121.8,10.1,127.9,4.4",
+    bounded: "1",
+    addressdetails: "1"
+  });
+
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?${params}`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Place search is temporarily unavailable. Please try again."
+    );
+  }
+
+  const results = await response.json();
+
+  if (!results.length) {
+    throw new Error(
+      `Could not find "${query}" in Mindanao. Try adding the barangay, municipality, or province.`
+    );
+  }
+
+  // Choose the closest matching result returned by the geocoder.
+  const result = results[0];
+
+  return {
+    name: result.display_name
+      .split(",")
+      .slice(0, 3)
+      .join(","),
+    lat: Number(result.lat),
+    lng: Number(result.lon),
+    weatherCard: null
+  };
+}
+
+function createCustomLocationKey() {
+  return `custom_${Date.now()}_${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+}
+
+// Nominatim's public service asks clients to keep requests to about one per second.
+function wait(milliseconds) {
+  return new Promise(resolve =>
+    setTimeout(resolve, milliseconds)
+  );
+}
+
+addParcelForm.addEventListener("submit", async function(event) {
   event.preventDefault();
 
   const trackingNumber = document
@@ -629,16 +694,23 @@ addParcelForm.addEventListener("submit", function(event) {
     .trim()
     .toUpperCase();
 
-  const origin =
-    document.getElementById("parcel-origin").value;
+  const originQuery = document
+    .getElementById("parcel-origin")
+    .value
+    .trim();
 
-  const destination =
-    document.getElementById("parcel-destination").value;
+  const destinationQuery = document
+    .getElementById("parcel-destination")
+    .value
+    .trim();
 
   const message =
     document.getElementById("add-parcel-message");
 
-  if (!trackingNumber || !origin || !destination) {
+  const submitButton =
+    addParcelForm.querySelector('button[type="submit"]');
+
+  if (!trackingNumber || !originQuery || !destinationQuery) {
     message.textContent =
       "Please complete all parcel information.";
     return;
@@ -656,28 +728,73 @@ addParcelForm.addEventListener("submit", function(event) {
     return;
   }
 
-  if (origin === destination) {
+  if (
+    originQuery.toLowerCase() ===
+    destinationQuery.toLowerCase()
+  ) {
     message.textContent =
       "Origin and destination must be different.";
     return;
   }
 
-  parcels[trackingNumber] = {
-    status: "In Transit",
-    origin,
-    destination
-  };
+  submitButton.disabled = true;
+  submitButton.textContent = "Finding locations...";
 
-  if (!saveParcels()) {
-    delete parcels[trackingNumber];
+  message.textContent =
+    "Searching for the origin and destination on the map...";
 
+  let originKey;
+  let destinationKey;
+
+  try {
+    const originPlace =
+      await geocodeMindanaoPlace(originQuery);
+
+    await wait(1100);
+
+    const destinationPlace =
+      await geocodeMindanaoPlace(destinationQuery);
+
+    originKey = createCustomLocationKey();
+    destinationKey = createCustomLocationKey();
+
+    locations[originKey] = originPlace;
+    locations[destinationKey] = destinationPlace;
+
+    saveCustomLocations();
+
+    parcels[trackingNumber] = {
+      status: "In Transit",
+      origin: originKey,
+      destination: destinationKey
+    };
+
+    if (!saveParcels()) {
+      delete parcels[trackingNumber];
+      delete locations[originKey];
+      delete locations[destinationKey];
+
+      saveCustomLocations();
+
+      throw new Error(
+        "Could not save this parcel. Check your browser storage settings."
+      );
+    }
+
+  } catch (error) {
     message.textContent =
-      "Could not save this parcel. Check your browser storage settings.";
+      error.message ||
+      "Could not find one of those places. Please check the spelling and try again.";
+
+    submitButton.disabled = false;
+    submitButton.textContent = "+ Add Parcel";
     return;
   }
 
-  message.textContent =
-    "Parcel added successfully!";
+  message.textContent = "Parcel added successfully!";
+
+  submitButton.disabled = false;
+  submitButton.textContent = "+ Add Parcel";
 
   addParcelForm.reset();
 
@@ -695,7 +812,8 @@ addParcelForm.addEventListener("submit", function(event) {
 ========================================== */
 
 function renderParcelList() {
-  const container = document.getElementById("parcel-list");
+  const container =
+    document.getElementById("parcel-list");
 
   container.replaceChildren();
 
@@ -726,6 +844,7 @@ function renderParcelList() {
     title.textContent = trackingNumber;
 
     const routeText = document.createElement("p");
+
     routeText.textContent =
       `${origin.name} → ${destination.name}`;
 
@@ -794,7 +913,6 @@ function deleteParcel(trackingNumber) {
 
     if (firstRemaining) {
       displayParcel(firstRemaining);
-
     } else {
       selectedTrackingNumber = null;
 
@@ -885,7 +1003,6 @@ async function getWeather(locationKey) {
     const feelsLike = Math.round(data.main.feels_like);
     const humidity = data.main.humidity;
     const wind = data.wind.speed;
-
     const description = data.weather[0].description;
     const icon = data.weather[0].icon;
 
@@ -977,7 +1094,8 @@ async function loadPinWeather(locationKey) {
     const temperature = Math.round(data.main.temp);
     const humidity = data.main.humidity;
 
-    const currentTarget = document.getElementById(targetId);
+    const currentTarget =
+      document.getElementById(targetId);
 
     if (currentTarget) {
       currentTarget.innerHTML =
@@ -986,7 +1104,8 @@ async function loadPinWeather(locationKey) {
     }
 
   } catch (error) {
-    const currentTarget = document.getElementById(targetId);
+    const currentTarget =
+      document.getElementById(targetId);
 
     if (currentTarget) {
       currentTarget.innerHTML =
