@@ -7,20 +7,15 @@
   <meta name="theme-color" content="#102b46">
   <title>ParcelTrack Mindanao</title>
 
-  <!-- Main stylesheet -->
   <link rel="stylesheet" href="styles.css">
-
-  <!-- Leaflet map stylesheet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     crossorigin=""
   >
 </head>
-
 <body>
 
-  <!-- HEADER -->
   <header class="header">
     <a href="#home" class="logo">
       <span class="logo-icon">📦</span>
@@ -33,8 +28,10 @@
     <nav class="navigation">
       <a href="#home">Home</a>
       <a href="#tracking">Track Parcel</a>
+      <a href="#add-parcel">Add Parcel</a>
       <a href="#route">Delivery Route</a>
       <a href="#weather">Weather</a>
+      <a href="#settings">Settings</a>
     </nav>
   </header>
 
@@ -42,11 +39,9 @@
   <section class="hero" id="home">
     <div class="hero-content">
       <span class="hero-label">MINDANAO PARCEL MONITORING</span>
-
       <h1>Track Your Parcel<br>Across Mindanao</h1>
-
       <p>
-        Monitor your shipment, follow its delivery route,
+        Manage shipments, monitor delivery routes,
         and check weather conditions along the way.
       </p>
 
@@ -54,7 +49,7 @@
         <input
           type="text"
           id="tracking-number"
-          placeholder="Enter your tracking number"
+          placeholder="Enter tracking number"
           autocomplete="off"
           required
         >
@@ -69,25 +64,21 @@
 
   <main class="main-container">
 
-    <!-- PARCEL TRACKING -->
+    <!-- TRACKING DETAILS -->
     <section class="section" id="tracking">
       <div class="section-heading">
         <span class="section-label">SHIPMENT INFORMATION</span>
         <h2>Parcel Tracking Details</h2>
-        <p>Check your parcel's current status and estimated arrival.</p>
+        <p>Check a shipment's current status and estimated arrival.</p>
       </div>
 
       <div class="tracking-card">
-
         <div class="tracking-header">
           <div>
             <span class="small-label">TRACKING NUMBER</span>
             <h3 id="tracking-code">MND123456789</h3>
           </div>
-
-          <span id="shipment-status" class="status-badge">
-            In Transit
-          </span>
+          <span id="shipment-status" class="status-badge">In Transit</span>
         </div>
 
         <div class="tracking-details">
@@ -95,50 +86,126 @@
             <span class="small-label">ORIGIN</span>
             <h3 id="origin-location">Davao City</h3>
           </div>
-
           <div class="detail-item">
             <span class="small-label">DESTINATION</span>
             <h3 id="destination-location">Iligan City</h3>
           </div>
-
           <div class="detail-item">
             <span class="small-label">NEXT LOCATION</span>
             <h3 id="next-location">Manolo Fortich</h3>
           </div>
         </div>
 
-        <!-- ETA -->
         <div class="eta-box">
           <div class="eta-heading">
             <span class="eta-icon">🚚</span>
             <div>
               <span class="small-label">ESTIMATED ARRIVAL</span>
-              <h2 id="eta-date">November 22, 2026</h2>
+              <h2 id="eta-date">—</h2>
             </div>
           </div>
 
           <div class="eta-details">
             <div>
               <span class="small-label">Estimated Time</span>
-              <h3 id="eta-time">3:00 PM</h3>
+              <h3 id="eta-time">—</h3>
             </div>
-
             <div>
               <span class="small-label">Time Remaining</span>
-              <h3 id="remaining-time">2 days</h3>
+              <h3 id="remaining-time">—</h3>
             </div>
           </div>
         </div>
-
       </div>
     </section>
 
-    <!-- DELIVERY ROUTE TIMELINE -->
+    <!-- ADD PARCEL -->
+    <section class="section" id="add-parcel">
+      <div class="section-heading">
+        <span class="section-label">PARCEL MANAGEMENT</span>
+        <h2>Add a New Parcel</h2>
+        <p>Register a shipment and create its delivery route.</p>
+      </div>
+
+      <div class="form-card">
+        <form id="add-parcel-form" class="add-parcel-form">
+
+          <div class="form-group">
+            <label for="new-tracking-number">Tracking Number</label>
+            <input
+              id="new-tracking-number"
+              type="text"
+              placeholder="Example: MND2026001"
+              required
+            >
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="parcel-origin">Origin</label>
+              <select id="parcel-origin" required>
+                <option value="">Select origin</option>
+                <option value="davao">Davao City</option>
+                <option value="manolo">Manolo Fortich</option>
+                <option value="cdo">Cagayan de Oro</option>
+                <option value="iligan">Iligan City</option>
+                <option value="butuan">Butuan City</option>
+                <option value="gensan">General Santos City</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="parcel-destination">Destination</label>
+              <select id="parcel-destination" required>
+                <option value="">Select destination</option>
+                <option value="davao">Davao City</option>
+                <option value="manolo">Manolo Fortich</option>
+                <option value="cdo">Cagayan de Oro</option>
+                <option value="iligan">Iligan City</option>
+                <option value="butuan">Butuan City</option>
+                <option value="gensan">General Santos City</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="parcel-eta-date">Estimated Arrival Date</label>
+              <input id="parcel-eta-date" type="date" required>
+            </div>
+
+            <div class="form-group">
+              <label for="parcel-eta-time">Estimated Arrival Time</label>
+              <input id="parcel-eta-time" type="time" required>
+            </div>
+          </div>
+
+          <button type="submit" class="primary-button">
+            + Add Parcel
+          </button>
+
+          <p id="add-parcel-message" class="form-message-dark" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- REGISTERED PARCELS -->
+    <section class="section">
+      <div class="section-heading">
+        <span class="section-label">SHIPMENT RECORDS</span>
+        <h2>Registered Parcels</h2>
+        <p>Select a parcel to view its route and delivery details.</p>
+      </div>
+
+      <div id="parcel-list" class="parcel-list"></div>
+    </section>
+
+    <!-- ROUTE TIMELINE -->
     <section class="section" id="route">
       <div class="section-heading">
         <span class="section-label">PARCEL JOURNEY</span>
         <h2>Delivery Route</h2>
-        <p>Follow your parcel's journey through the Mindanao network.</p>
+        <p>Follow the selected parcel's journey through Mindanao.</p>
       </div>
 
       <div class="route-track" id="route-track"></div>
@@ -147,11 +214,9 @@
     <!-- LEAFLET MAP -->
     <section class="section">
       <div class="section-heading">
-        <span class="section-label">LIVE ROUTE VISUALIZATION</span>
+        <span class="section-label">ROUTE VISUALIZATION</span>
         <h2>Mindanao Delivery Map</h2>
-        <p>
-          View parcel locations, the sorting hub, and the delivery route.
-        </p>
+        <p>View parcel locations, sorting hubs, and delivery routes.</p>
       </div>
 
       <div class="map-container">
@@ -160,11 +225,10 @@
             <h3>Parcel Route Overview</h3>
             <p>Mindanao, Philippines</p>
           </div>
-
           <span class="map-status">● Interactive Map</span>
         </div>
 
-        <div id="map" aria-label="Interactive parcel delivery map"></div>
+        <div id="map"></div>
 
         <div class="map-legend">
           <span><i class="legend-dot origin-dot"></i> Origin</span>
@@ -180,9 +244,7 @@
       <div class="section-heading">
         <span class="section-label">OPENWEATHER MONITORING</span>
         <h2>Weather Along the Route</h2>
-        <p>
-          Check current weather conditions at each delivery location.
-        </p>
+        <p>Current weather at the main Mindanao monitoring locations.</p>
       </div>
 
       <div class="weather-toolbar">
@@ -192,8 +254,7 @@
         </button>
       </div>
 
-      <div class="weather-grid" id="weather-grid">
-
+      <div class="weather-grid">
         <article class="weather-card" id="weather-davao">
           <h3>Davao City</h3>
           <p class="weather-loading">Loading weather...</p>
@@ -213,31 +274,85 @@
           <h3>Iligan City</h3>
           <p class="weather-loading">Loading weather...</p>
         </article>
-
       </div>
 
       <p class="weather-note">
-        Weather information is retrieved from OpenWeatherMap.
-        Weather conditions may affect delivery schedules.
+        Weather data provided by OpenWeatherMap.
       </p>
+    </section>
+
+    <!-- API SETTINGS -->
+    <section class="section" id="settings">
+      <div class="section-heading">
+        <span class="section-label">CONFIGURATION</span>
+        <h2>API Key Settings</h2>
+        <p>Configure your OpenWeatherMap API key for weather updates.</p>
+      </div>
+
+      <div class="form-card settings-card">
+        <form id="api-key-form">
+          <div class="form-group">
+            <label for="api-key-input">OpenWeatherMap API Key</label>
+
+            <div class="api-input-row">
+              <input
+                type="password"
+                id="api-key-input"
+                placeholder="Enter your OpenWeatherMap API key"
+                autocomplete="off"
+              >
+
+              <button
+                type="button"
+                id="toggle-api-key"
+                class="secondary-button"
+              >
+                Show
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button type="submit" class="primary-button">
+              Save API Key
+            </button>
+
+            <button
+              type="button"
+              id="remove-api-key"
+              class="danger-button"
+            >
+              Remove Key
+            </button>
+          </div>
+
+          <p id="api-key-message" class="form-message-dark" aria-live="polite"></p>
+        </form>
+
+        <div class="security-note">
+          <strong>Security reminder</strong>
+          <p>
+            This prototype stores the API key in your browser's local storage.
+            It is not secure for public deployment because visitors can inspect
+            browser data and network requests. Use a backend to protect the key
+            before publishing the website.
+          </p>
+        </div>
+      </div>
     </section>
 
   </main>
 
-  <!-- FOOTER -->
   <footer class="footer">
     <h3>📦 ParcelTrack Mindanao</h3>
     <p>Connecting deliveries across Mindanao, Philippines.</p>
     <small>© 2026 ParcelTrack. All rights reserved.</small>
   </footer>
 
-  <!-- Leaflet library -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     crossorigin=""
   ></script>
-
-  <!-- Your JavaScript -->
   <script src="script.js"></script>
 
 </body>

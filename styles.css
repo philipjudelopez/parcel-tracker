@@ -1,13 +1,10 @@
 
-/* =========================
-   GLOBAL STYLES
-========================= */
-
 :root {
   --navy: #102b46;
   --blue: #1677d2;
   --light-blue: #eaf4fb;
   --green: #16a36a;
+  --red: #c74747;
   --text: #263849;
   --muted: #718096;
   --border: #e5ebf0;
@@ -31,8 +28,7 @@ body {
   line-height: 1.6;
 }
 
-button,
-input {
+button, input, select {
   font: inherit;
 }
 
@@ -41,14 +37,11 @@ button {
 }
 
 a {
-  text-decoration: none;
   color: inherit;
+  text-decoration: none;
 }
 
-
-/* =========================
-   HEADER
-========================= */
+/* HEADER */
 
 .header {
   background: var(--navy);
@@ -84,24 +77,20 @@ a {
 
 .navigation {
   display: flex;
-  gap: 26px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
 .navigation a {
   color: #e5edf5;
-  font-size: 14px;
-  transition: color 0.2s;
+  font-size: 13px;
 }
 
 .navigation a:hover {
   color: #71c3ff;
 }
 
-
-/* =========================
-   HERO
-========================= */
+/* HERO */
 
 .hero {
   min-height: 390px;
@@ -110,7 +99,7 @@ a {
   padding: 65px 8%;
   color: white;
   background:
-    linear-gradient(110deg, rgba(10, 34, 58, 0.97), rgba(15, 77, 119, 0.85)),
+    linear-gradient(110deg, rgba(10,34,58,.97), rgba(15,77,119,.85)),
     url("https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1600&q=80")
     center/cover;
 }
@@ -120,8 +109,7 @@ a {
   max-width: 720px;
 }
 
-.hero-label,
-.section-label {
+.hero-label, .section-label {
   display: inline-block;
   color: var(--blue);
   font-size: 11px;
@@ -154,19 +142,14 @@ a {
 .tracking-form input {
   flex: 1;
   min-width: 0;
-  padding: 16px;
+  padding: 15px;
   border: 1px solid transparent;
   border-radius: 8px;
   outline: none;
 }
 
-.tracking-form input:focus {
-  border-color: #72c4ff;
-  box-shadow: 0 0 0 3px rgba(114, 196, 255, 0.2);
-}
-
-.tracking-form button {
-  padding: 14px 22px;
+.tracking-form button, .primary-button {
+  padding: 13px 20px;
   border: none;
   border-radius: 8px;
   background: var(--blue);
@@ -174,19 +157,17 @@ a {
   font-weight: 700;
 }
 
-.tracking-form button:hover {
+.tracking-form button:hover, .primary-button:hover {
   background: #0d64b8;
 }
 
 .form-message {
-  font-size: 12px;
   margin-top: 12px;
+  font-size: 12px;
+  color: #b9f3d1;
 }
 
-
-/* =========================
-   MAIN LAYOUT
-========================= */
+/* MAIN LAYOUT */
 
 .main-container {
   width: min(1200px, 90%);
@@ -219,16 +200,13 @@ a {
   letter-spacing: 1px;
 }
 
+/* CARDS AND FORMS */
 
-/* =========================
-   TRACKING CARD
-========================= */
-
-.tracking-card {
+.tracking-card, .form-card {
   background: white;
   padding: 28px;
   border-radius: 14px;
-  box-shadow: 0 5px 22px rgba(16, 43, 70, 0.06);
+  box-shadow: 0 5px 22px rgba(16,43,70,.06);
 }
 
 .tracking-header {
@@ -267,10 +245,7 @@ a {
   margin-top: 6px;
 }
 
-
-/* =========================
-   ETA BOX
-========================= */
+/* ETA */
 
 .eta-box {
   background: var(--light-blue);
@@ -306,18 +281,163 @@ a {
   margin-top: 4px;
 }
 
+/* FORM FIELDS */
 
-/* =========================
-   ROUTE TIMELINE
-========================= */
+.add-parcel-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-group label {
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #d9e2e9;
+  border-radius: 8px;
+  background: white;
+  color: var(--text);
+  outline: none;
+}
+
+.form-group input:focus, .form-group select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(22,119,210,.1);
+}
+
+.form-message-dark {
+  color: var(--green);
+  font-size: 13px;
+}
+
+.settings-actions, .api-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.api-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.secondary-button, .danger-button {
+  padding: 10px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  background: white;
+}
+
+.secondary-button {
+  color: var(--blue);
+  border: 1px solid #c9ddec;
+}
+
+.secondary-button:hover {
+  background: var(--light-blue);
+}
+
+.danger-button {
+  color: var(--red);
+  border: 1px solid #efcccc;
+}
+
+.danger-button:hover {
+  background: #fff1f1;
+}
+
+.security-note {
+  margin-top: 22px;
+  padding: 16px;
+  background: #fff8e8;
+  border: 1px solid #f3e1b6;
+  border-radius: 9px;
+  color: #775b1c;
+  font-size: 12px;
+}
+
+.security-note p {
+  margin-top: 5px;
+}
+
+/* PARCEL LIST */
+
+.parcel-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.parcel-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 17px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.parcel-item h4 {
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.parcel-item p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.parcel-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.parcel-item button {
+  padding: 8px 11px;
+  border: none;
+  border-radius: 6px;
+  background: var(--light-blue);
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.parcel-item button.delete-parcel {
+  background: #fff0f0;
+  color: var(--red);
+}
+
+/* ROUTE TIMELINE */
 
 .route-track {
   display: flex;
-  gap: 0;
   background: white;
   padding: 28px;
   border-radius: 14px;
-  box-shadow: 0 5px 22px rgba(16, 43, 70, 0.06);
+  box-shadow: 0 5px 22px rgba(16,43,70,.06);
   overflow-x: auto;
 }
 
@@ -379,7 +499,6 @@ a {
 }
 
 .route-info p {
-  color: var(--text);
   font-size: 12px;
   margin-top: 4px;
 }
@@ -389,16 +508,13 @@ a {
   font-size: 11px;
 }
 
-
-/* =========================
-   MAP
-========================= */
+/* MAP */
 
 .map-container {
   overflow: hidden;
   background: white;
   border-radius: 14px;
-  box-shadow: 0 5px 22px rgba(16, 43, 70, 0.06);
+  box-shadow: 0 5px 22px rgba(16,43,70,.06);
 }
 
 .map-header {
@@ -455,17 +571,9 @@ a {
   border-radius: 50%;
 }
 
-.origin-dot {
-  background: var(--green);
-}
-
-.hub-dot {
-  background: var(--blue);
-}
-
-.destination-dot {
-  background: #ed9a32;
-}
+.origin-dot { background: var(--green); }
+.hub-dot { background: var(--blue); }
+.destination-dot { background: #ed9a32; }
 
 .legend-line {
   width: 20px;
@@ -474,10 +582,7 @@ a {
   background: var(--blue);
 }
 
-
-/* =========================
-   WEATHER
-========================= */
+/* WEATHER */
 
 .weather-toolbar {
   display: flex;
@@ -493,20 +598,6 @@ a {
   font-size: 12px;
 }
 
-.secondary-button {
-  background: white;
-  color: var(--blue);
-  border: 1px solid #c9ddec;
-  border-radius: 7px;
-  padding: 9px 14px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.secondary-button:hover {
-  background: var(--light-blue);
-}
-
 .weather-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -518,7 +609,7 @@ a {
   padding: 20px;
   border-radius: 12px;
   background: white;
-  box-shadow: 0 5px 22px rgba(16, 43, 70, 0.06);
+  box-shadow: 0 5px 22px rgba(16,43,70,.06);
 }
 
 .weather-card h3 {
@@ -526,26 +617,26 @@ a {
   font-size: 15px;
 }
 
-.weather-card .weather-icon {
+.weather-icon {
   width: 60px;
   height: 60px;
   object-fit: contain;
   margin: 8px 0;
 }
 
-.weather-card .temperature {
+.temperature {
   font-size: 30px;
   color: var(--navy);
   font-weight: 700;
 }
 
-.weather-card .description {
+.description {
   color: var(--muted);
   text-transform: capitalize;
   font-size: 13px;
 }
 
-.weather-card .weather-extra {
+.weather-extra {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
@@ -554,15 +645,14 @@ a {
   line-height: 1.9;
 }
 
-.weather-loading,
-.weather-error {
+.weather-loading, .weather-error {
   color: var(--muted);
   font-size: 12px;
   margin-top: 12px;
 }
 
 .weather-error {
-  color: #b54747;
+  color: var(--red);
 }
 
 .weather-note {
@@ -571,20 +661,13 @@ a {
   color: var(--muted);
 }
 
-
-/* =========================
-   FOOTER
-========================= */
+/* FOOTER */
 
 .footer {
   background: var(--navy);
   color: white;
   text-align: center;
   padding: 32px 20px;
-}
-
-.footer h3 {
-  margin-bottom: 5px;
 }
 
 .footer p {
@@ -599,10 +682,7 @@ a {
   font-size: 11px;
 }
 
-
-/* =========================
-   RESPONSIVE DESIGN
-========================= */
+/* RESPONSIVE */
 
 @media (max-width: 900px) {
   .weather-grid {
@@ -639,13 +719,12 @@ a {
     width: 92%;
   }
 
-  .tracking-card {
+  .tracking-card, .form-card {
     padding: 20px;
   }
 
-  .tracking-details {
+  .tracking-details, .form-row, .parcel-list {
     grid-template-columns: 1fr;
-    gap: 16px;
   }
 
   .eta-details {
@@ -685,6 +764,11 @@ a {
   }
 
   .tracking-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .parcel-item {
     align-items: flex-start;
     flex-direction: column;
   }

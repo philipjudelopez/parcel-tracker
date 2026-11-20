@@ -1,21 +1,16 @@
 
-/* =====================================
+/* ==========================================
    PARCELTRACK MINDANAO
-   Parcel Search + Leaflet + OpenWeather
-===================================== */
+   Parcel Management + Leaflet + OpenWeather
+========================================== */
 
 
-/* =====================================
-   1. OPENWEATHER API CONFIGURATION
-===================================== */
+/* ==========================================
+   1. CONFIGURATION AND STORAGE
+========================================== */
 
-const OPENWEATHER_API_KEY = "YOUR_API_KEY_HERE";
-
-
-/* =====================================
-   2. MINDANAO LOCATION DATA
-   Coordinates: latitude, longitude
-===================================== */
+const PARCEL_STORAGE_KEY = "parceltrack_mindanao_parcels";
+const API_STORAGE_KEY = "parceltrack_openweather_key";
 
 const locations = {
   davao: {
@@ -24,36 +19,31 @@ const locations = {
     lng: 125.4553,
     weatherCard: "weather-davao"
   },
-
   manolo: {
     name: "Manolo Fortich",
     lat: 8.3697,
     lng: 124.8642,
     weatherCard: "weather-manolo"
   },
-
   cdo: {
     name: "Cagayan de Oro",
     lat: 8.4542,
     lng: 124.6319,
     weatherCard: "weather-cdo"
   },
-
   iligan: {
     name: "Iligan City",
     lat: 8.2280,
     lng: 124.2452,
     weatherCard: "weather-iligan"
   },
-
   butuan: {
     name: "Butuan City",
     lat: 8.9475,
     lng: 125.5406,
     weatherCard: null
   },
-
-  generalSantos: {
+  gensan: {
     name: "General Santos City",
     lat: 6.1164,
     lng: 125.1716,
@@ -62,132 +52,154 @@ const locations = {
 };
 
 
-/* =====================================
-   3. SAMPLE PARCEL DATABASE
+/* ==========================================
+   2. SAMPLE PARCELS
+========================================== */
 
-   Replace this sample data with your
-   actual database/API when available.
-===================================== */
-
-const parcels = {
-  "MND123456789": {
+const sampleParcels = {
+  MND123456789: {
     status: "In Transit",
     origin: "davao",
     destination: "iligan",
-    nextLocation: "manolo",
-    etaDate: "November 22, 2026",
-    etaTime: "3:00 PM",
-    remaining: "2 days",
-
-    route: [
-      {
-        location: "davao",
-        description: "Parcel received",
-        detail: "Origin facility",
-        status: "completed"
-      },
-      {
-        location: "manolo",
-        description: "Sorting hub",
-        detail: "Main distribution center",
-        status: "current"
-      },
-      {
-        location: "cdo",
-        description: "Next distribution point",
-        detail: "Regional facility",
-        status: "pending"
-      },
-      {
-        location: "iligan",
-        description: "Final destination",
-        detail: "Awaiting delivery",
-        status: "pending"
-      }
-    ]
+    etaDate: "2026-11-22",
+    etaTime: "15:00"
   },
-
-  "MND987654321": {
+  MND987654321: {
     status: "In Transit",
     origin: "cdo",
     destination: "butuan",
-    nextLocation: "butuan",
-    etaDate: "November 21, 2026",
-    etaTime: "11:00 AM",
-    remaining: "1 day",
-
-    route: [
-      {
-        location: "cdo",
-        description: "Parcel received",
-        detail: "Origin facility",
-        status: "completed"
-      },
-      {
-        location: "manolo",
-        description: "Parcel processed",
-        detail: "Main sorting hub",
-        status: "completed"
-      },
-      {
-        location: "butuan",
-        description: "Final destination",
-        detail: "Out for delivery",
-        status: "current"
-      }
-    ]
+    etaDate: "2026-11-21",
+    etaTime: "11:00"
   },
-
-  "MND555666777": {
+  MND555666777: {
     status: "In Transit",
-    origin: "generalSantos",
+    origin: "gensan",
     destination: "davao",
-    nextLocation: "davao",
-    etaDate: "November 21, 2026",
-    etaTime: "4:30 PM",
-    remaining: "1 day",
-
-    route: [
-      {
-        location: "generalSantos",
-        description: "Parcel received",
-        detail: "Origin facility",
-        status: "completed"
-      },
-      {
-        location: "davao",
-        description: "Final destination",
-        detail: "Out for delivery",
-        status: "current"
-      }
-    ]
+    etaDate: "2026-11-21",
+    etaTime: "16:30"
   }
 };
 
-
-/* =====================================
-   4. LEAFLET MAP INITIALIZATION
-===================================== */
-
-const map = L.map("map", {
-  scrollWheelZoom: true
-}).setView([7.9, 125.0], 7);
+let parcels = loadParcels();
+let selectedTrackingNumber = null;
 
 
-// OpenStreetMap tile layer
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution:
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+/* ==========================================
+   3. LOAD AND SAVE PARCELS
+========================================== */
 
-  maxZoom: 19
-}).addTo(map);
+function loadParcels() {
+  try {
+    const saved = localStorage.getItem(PARCEL_STORAGE_KEY);
+
+    if (saved) {
+      const parsed = JSON.parse(saved);
+
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error("Could not load parcel records:", error);
+  }
+
+  return { ...sampleParcels };
+}
+
+function saveParcels() {
+  try {
+    localStorage.setItem(
+      PARCEL_STORAGE_KEY,
+      JSON.stringify(parcels)
+    );
+    return true;
+  } catch (error) {
+    console.error("Could not save parcel records:", error);
+    return false;
+  }
+}
 
 
-// Marker icons
+/* ==========================================
+   4. API KEY SETTINGS
+========================================== */
+
+function getApiKey() {
+  return localStorage.getItem(API_STORAGE_KEY) || "";
+}
+
+const apiKeyInput = document.getElementById("api-key-input");
+const apiKeyForm = document.getElementById("api-key-form");
+const apiKeyMessage = document.getElementById("api-key-message");
+
+apiKeyForm.addEventListener("submit", function(event) {
+  event.preventDefault();
+
+  const key = apiKeyInput.value.trim();
+
+  if (!key) {
+    apiKeyMessage.textContent = "Please enter an API key.";
+    return;
+  }
+
+  try {
+    localStorage.setItem(API_STORAGE_KEY, key);
+
+    apiKeyInput.value = "";
+    apiKeyMessage.textContent = "API key saved successfully.";
+
+    loadAllWeather();
+  } catch (error) {
+    apiKeyMessage.textContent = "Could not save API key in this browser.";
+  }
+});
+
+document
+  .getElementById("toggle-api-key")
+  .addEventListener("click", function() {
+    const isHidden = apiKeyInput.type === "password";
+
+    apiKeyInput.type = isHidden ? "text" : "password";
+    this.textContent = isHidden ? "Hide" : "Show";
+  });
+
+document
+  .getElementById("remove-api-key")
+  .addEventListener("click", function() {
+    localStorage.removeItem(API_STORAGE_KEY);
+
+    apiKeyInput.value = "";
+    apiKeyInput.type = "password";
+
+    apiKeyMessage.textContent = "API key removed.";
+
+    loadAllWeather();
+  });
+
+
+/* ==========================================
+   5. LEAFLET MAP
+========================================== */
+
+const map = L.map("map").setView([7.9, 125.0], 7);
+
+L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    maxZoom: 19,
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }
+).addTo(map);
+
+const markerLayer = L.layerGroup().addTo(map);
+
+let routeLine = null;
+
+
 function createMarkerIcon(color) {
   return L.divIcon({
     className: "custom-map-marker",
-
     html: `
       <div style="
         width:18px;
@@ -198,40 +210,82 @@ function createMarkerIcon(color) {
         box-shadow:0 2px 7px rgba(0,0,0,0.35);
       "></div>
     `,
-
     iconSize: [18, 18],
     iconAnchor: [9, 9]
   });
 }
 
 
-// Map marker and route layers
-const markerLayer = L.layerGroup().addTo(map);
+/* ==========================================
+   6. CREATE PARCEL ROUTE
+========================================== */
 
-let routeLine = null;
+function createParcelRoute(parcel) {
+  const routeKeys = [];
+
+  function addLocation(key) {
+    if (
+      locations[key] &&
+      routeKeys[routeKeys.length - 1] !== key
+    ) {
+      routeKeys.push(key);
+    }
+  }
+
+  addLocation(parcel.origin);
+
+  // Manolo Fortich is the main sorting hub.
+  if (parcel.origin !== "manolo" &&
+      parcel.destination !== "manolo") {
+    addLocation("manolo");
+  }
+
+  addLocation(parcel.destination);
+
+  return routeKeys.map((key, index) => ({
+    location: key,
+    description:
+      index === 0
+        ? "Parcel received"
+        : index === routeKeys.length - 1
+          ? "Final destination"
+          : "Parcel processed at sorting hub",
+    detail:
+      key === "manolo"
+        ? "Main distribution center"
+        : index === 0
+          ? "Origin facility"
+          : "Delivery facility",
+    status:
+      index === routeKeys.length - 1
+        ? "current"
+        : "completed"
+  }));
+}
 
 
-/* =====================================
-   5. DRAW PARCEL ROUTE ON MAP
-===================================== */
+/* ==========================================
+   7. DISPLAY ROUTE ON MAP
+========================================== */
 
 function updateMap(parcel) {
   markerLayer.clearLayers();
 
   if (routeLine) {
     map.removeLayer(routeLine);
+    routeLine = null;
   }
 
-  const routeCoordinates = [];
+  const route = createParcelRoute(parcel);
+  const coordinates = [];
 
-  parcel.route.forEach((stop, index) => {
+  route.forEach((stop, index) => {
     const place = locations[stop.location];
 
     if (!place) return;
 
-    const coordinates = [place.lat, place.lng];
-
-    routeCoordinates.push(coordinates);
+    const point = [place.lat, place.lng];
+    coordinates.push(point);
 
     let markerColor = "#1677d2";
 
@@ -239,31 +293,27 @@ function updateMap(parcel) {
       markerColor = "#16a36a";
     }
 
+    if (index === route.length - 1) {
+      markerColor = "#ed9a32";
+    }
+
     if (stop.location === "manolo") {
       markerColor = "#1677d2";
     }
 
-    if (index === parcel.route.length - 1) {
-      markerColor = "#ed9a32";
-    }
-
-    const marker = L.marker(coordinates, {
+    L.marker(point, {
       icon: createMarkerIcon(markerColor)
-    });
-
-    marker.bindPopup(`
-      <strong>${place.name}</strong><br>
-      ${stop.description}<br>
-      <small>${stop.detail}</small>
-    `);
-
-    marker.addTo(markerLayer);
+    })
+      .bindPopup(`
+        <strong>${place.name}</strong><br>
+        ${stop.description}<br>
+        <small>${stop.detail}</small>
+      `)
+      .addTo(markerLayer);
   });
 
-
-  // Draw route line
-  if (routeCoordinates.length > 1) {
-    routeLine = L.polyline(routeCoordinates, {
+  if (coordinates.length > 1) {
+    routeLine = L.polyline(coordinates, {
       color: "#1677d2",
       weight: 5,
       opacity: 0.85,
@@ -273,52 +323,112 @@ function updateMap(parcel) {
     map.fitBounds(routeLine.getBounds(), {
       padding: [45, 45]
     });
-  } else if (routeCoordinates.length === 1) {
-    map.setView(routeCoordinates[0], 10);
+  } else if (coordinates.length === 1) {
+    map.setView(coordinates[0], 10);
   }
 }
 
 
-/* =====================================
-   6. UPDATE ROUTE TIMELINE
-===================================== */
+/* ==========================================
+   8. UPDATE TIMELINE
+========================================== */
 
 function updateTimeline(parcel) {
   const routeTrack = document.getElementById("route-track");
 
-  routeTrack.innerHTML = "";
+  routeTrack.replaceChildren();
 
-  parcel.route.forEach(stop => {
+  const route = createParcelRoute(parcel);
+
+  route.forEach(stop => {
     const place = locations[stop.location];
 
-    if (!place) return;
+    const element = document.createElement("div");
+    element.className = `route-stop ${stop.status}`;
 
-    const stopElement = document.createElement("div");
+    const marker = document.createElement("div");
+    marker.className = "route-marker";
+    marker.textContent =
+      stop.status === "completed" ? "✓" : "●";
 
-    stopElement.className = `route-stop ${stop.status}`;
+    const info = document.createElement("div");
+    info.className = "route-info";
 
-    const markerSymbol =
-      stop.status === "completed" ? "✓" :
-      stop.status === "current" ? "●" : "○";
+    const heading = document.createElement("h4");
+    heading.textContent = place.name;
 
-    stopElement.innerHTML = `
-      <div class="route-marker">${markerSymbol}</div>
+    const description = document.createElement("p");
+    description.textContent = stop.description;
 
-      <div class="route-info">
-        <h4>${place.name}</h4>
-        <p>${stop.description}</p>
-        <small>${stop.detail}</small>
-      </div>
-    `;
+    const detail = document.createElement("small");
+    detail.textContent = stop.detail;
 
-    routeTrack.appendChild(stopElement);
+    info.append(heading, description, detail);
+    element.append(marker, info);
+    routeTrack.appendChild(element);
   });
 }
 
 
-/* =====================================
-   7. UPDATE PARCEL INFORMATION
-===================================== */
+/* ==========================================
+   9. ETA CALCULATION
+========================================== */
+
+function formatEta(date, time) {
+  const eta = new Date(`${date}T${time}:00`);
+
+  if (Number.isNaN(eta.getTime())) {
+    return {
+      date: "Not available",
+      time: "Not available",
+      remaining: "Not available"
+    };
+  }
+
+  const now = new Date();
+  const difference = eta.getTime() - now.getTime();
+
+  const dateText = eta.toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+
+  const timeText = eta.toLocaleTimeString("en-PH", {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+
+  let remaining;
+
+  if (difference <= 0) {
+    remaining = "ETA passed";
+  } else {
+    const totalMinutes = Math.ceil(difference / 60000);
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+
+    if (days > 0) {
+      remaining = `${days}d ${hours}h`;
+    } else if (hours > 0) {
+      remaining = `${hours}h ${minutes}m`;
+    } else {
+      remaining = `${minutes} minutes`;
+    }
+  }
+
+  return {
+    date: dateText,
+    time: timeText,
+    remaining
+  };
+}
+
+
+/* ==========================================
+   10. DISPLAY SELECTED PARCEL
+========================================== */
 
 function displayParcel(trackingNumber) {
   const parcel = parcels[trackingNumber];
@@ -328,15 +438,26 @@ function displayParcel(trackingNumber) {
   if (!parcel) {
     message.textContent =
       "Tracking number not found. Please check and try again.";
-
     message.style.color = "#ffb7b7";
-
     return;
   }
 
   const origin = locations[parcel.origin];
   const destination = locations[parcel.destination];
-  const next = locations[parcel.nextLocation];
+
+  if (!origin || !destination) {
+    message.textContent = "This parcel has invalid location information.";
+    return;
+  }
+
+  selectedTrackingNumber = trackingNumber;
+
+  const route = createParcelRoute(parcel);
+  const nextLocation = route[1]
+    ? locations[route[1].location].name
+    : destination.name;
+
+  const eta = formatEta(parcel.etaDate, parcel.etaTime);
 
   document.getElementById("tracking-code").textContent =
     trackingNumber;
@@ -351,48 +472,254 @@ function displayParcel(trackingNumber) {
     destination.name;
 
   document.getElementById("next-location").textContent =
-    next ? next.name : "To be determined";
+    nextLocation;
 
   document.getElementById("eta-date").textContent =
-    parcel.etaDate;
+    eta.date;
 
   document.getElementById("eta-time").textContent =
-    parcel.etaTime;
+    eta.time;
 
   document.getElementById("remaining-time").textContent =
-    parcel.remaining;
+    eta.remaining;
 
   message.textContent = "Parcel information loaded successfully.";
-
   message.style.color = "#b9f3d1";
 
   updateTimeline(parcel);
   updateMap(parcel);
+  renderParcelList();
 }
 
 
-/* =====================================
-   8. PARCEL SEARCH FORM
-===================================== */
+/* ==========================================
+   11. SEARCH PARCEL
+========================================== */
 
-const trackingForm = document.getElementById("track-form");
+document
+  .getElementById("track-form")
+  .addEventListener("submit", function(event) {
+    event.preventDefault();
 
-trackingForm.addEventListener("submit", function(event) {
+    const trackingNumber = document
+      .getElementById("tracking-number")
+      .value
+      .trim()
+      .toUpperCase();
+
+    displayParcel(trackingNumber);
+  });
+
+
+/* ==========================================
+   12. ADD NEW PARCEL
+========================================== */
+
+const addParcelForm = document.getElementById("add-parcel-form");
+
+addParcelForm.addEventListener("submit", function(event) {
   event.preventDefault();
 
   const trackingNumber = document
-    .getElementById("tracking-number")
+    .getElementById("new-tracking-number")
     .value
     .trim()
     .toUpperCase();
 
+  const origin = document.getElementById("parcel-origin").value;
+  const destination = document.getElementById("parcel-destination").value;
+  const etaDate = document.getElementById("parcel-eta-date").value;
+  const etaTime = document.getElementById("parcel-eta-time").value;
+
+  const message = document.getElementById("add-parcel-message");
+
+  if (!trackingNumber || !origin || !destination || !etaDate || !etaTime) {
+    message.textContent = "Please complete all parcel information.";
+    return;
+  }
+
+  if (!/^[A-Z0-9-]{5,30}$/.test(trackingNumber)) {
+    message.textContent =
+      "Use 5–30 characters: letters, numbers, or hyphens.";
+    return;
+  }
+
+  if (parcels[trackingNumber]) {
+    message.textContent = "That tracking number already exists.";
+    return;
+  }
+
+  if (origin === destination) {
+    message.textContent =
+      "Origin and destination must be different.";
+    return;
+  }
+
+  const eta = new Date(`${etaDate}T${etaTime}:00`);
+
+  if (Number.isNaN(eta.getTime()) || eta <= new Date()) {
+    message.textContent =
+      "Please select an estimated arrival time in the future.";
+    return;
+  }
+
+  parcels[trackingNumber] = {
+    status: "In Transit",
+    origin,
+    destination,
+    etaDate,
+    etaTime
+  };
+
+  if (!saveParcels()) {
+    delete parcels[trackingNumber];
+    message.textContent =
+      "Could not save this parcel. Check your browser storage settings.";
+    return;
+  }
+
+  message.textContent = "Parcel added successfully!";
+
+  addParcelForm.reset();
+
+  renderParcelList();
   displayParcel(trackingNumber);
+
+  document.getElementById("tracking").scrollIntoView({
+    behavior: "smooth"
+  });
 });
 
 
-/* =====================================
-   9. OPENWEATHER CURRENT WEATHER
-===================================== */
+/* ==========================================
+   13. RENDER REGISTERED PARCELS
+========================================== */
+
+function renderParcelList() {
+  const container = document.getElementById("parcel-list");
+
+  container.replaceChildren();
+
+  const entries = Object.entries(parcels);
+
+  if (entries.length === 0) {
+    const empty = document.createElement("p");
+    empty.textContent = "No parcels have been registered.";
+    container.appendChild(empty);
+    return;
+  }
+
+  entries.forEach(([trackingNumber, parcel]) => {
+    const origin = locations[parcel.origin];
+    const destination = locations[parcel.destination];
+
+    if (!origin || !destination) return;
+
+    const card = document.createElement("article");
+    card.className = "parcel-item";
+
+    const details = document.createElement("div");
+
+    const title = document.createElement("h4");
+    title.textContent = trackingNumber;
+
+    const routeText = document.createElement("p");
+    routeText.textContent =
+      `${origin.name} → ${destination.name}`;
+
+    details.append(title, routeText);
+
+    const actions = document.createElement("div");
+    actions.className = "parcel-item-actions";
+
+    const viewButton = document.createElement("button");
+    viewButton.type = "button";
+    viewButton.textContent = "View Route";
+
+    viewButton.addEventListener("click", () => {
+      displayParcel(trackingNumber);
+
+      document.getElementById("tracking").scrollIntoView({
+        behavior: "smooth"
+      });
+    });
+
+    actions.appendChild(viewButton);
+
+    if (!Object.hasOwn(sampleParcels, trackingNumber)) {
+      const deleteButton = document.createElement("button");
+
+      deleteButton.type = "button";
+      deleteButton.textContent = "Delete";
+      deleteButton.className = "delete-parcel";
+
+      deleteButton.addEventListener("click", () => {
+        deleteParcel(trackingNumber);
+      });
+
+      actions.appendChild(deleteButton);
+    }
+
+    card.append(details, actions);
+    container.appendChild(card);
+  });
+}
+
+
+/* ==========================================
+   14. DELETE PARCEL
+========================================== */
+
+function deleteParcel(trackingNumber) {
+  const confirmed = confirm(
+    `Are you sure you want to delete parcel ${trackingNumber}?`
+  );
+
+  if (!confirmed) return;
+
+  delete parcels[trackingNumber];
+
+  if (!saveParcels()) {
+    alert("Could not save the parcel changes.");
+    return;
+  }
+
+  renderParcelList();
+
+  if (selectedTrackingNumber === trackingNumber) {
+    const firstRemaining = Object.keys(parcels)[0];
+
+    if (firstRemaining) {
+      displayParcel(firstRemaining);
+    } else {
+      selectedTrackingNumber = null;
+
+      document.getElementById("tracking-code").textContent = "No parcel selected";
+      document.getElementById("shipment-status").textContent = "No shipment";
+      document.getElementById("origin-location").textContent = "—";
+      document.getElementById("destination-location").textContent = "—";
+      document.getElementById("next-location").textContent = "—";
+      document.getElementById("eta-date").textContent = "—";
+      document.getElementById("eta-time").textContent = "—";
+      document.getElementById("remaining-time").textContent = "—";
+
+      document.getElementById("route-track").replaceChildren();
+      markerLayer.clearLayers();
+
+      if (routeLine) {
+        map.removeLayer(routeLine);
+        routeLine = null;
+      }
+
+      map.setView([7.9, 125.0], 7);
+    }
+  }
+}
+
+
+/* ==========================================
+   15. OPENWEATHER API
+========================================== */
 
 async function getWeather(locationKey) {
   const place = locations[locationKey];
@@ -400,15 +727,13 @@ async function getWeather(locationKey) {
   if (!place || !place.weatherCard) return;
 
   const card = document.getElementById(place.weatherCard);
+  const apiKey = getApiKey();
 
-  if (
-    !OPENWEATHER_API_KEY ||
-    OPENWEATHER_API_KEY === "YOUR_API_KEY_HERE"
-  ) {
+  if (!apiKey) {
     card.innerHTML = `
       <h3>${place.name}</h3>
-      <p class="weather-error">
-        Add your OpenWeatherMap API key in script.js.
+      <p class="weather-loading">
+        Add your API key in Settings to load weather.
       </p>
     `;
     return;
@@ -420,21 +745,25 @@ async function getWeather(locationKey) {
   `;
 
   const url =
-    `https://api.openweathermap.org/data/2.5/weather` +
+    "https://api.openweathermap.org/data/2.5/weather" +
     `?lat=${place.lat}` +
     `&lon=${place.lng}` +
-    `&appid=${OPENWEATHER_API_KEY}` +
-    `&units=metric`;
+    `&appid=${encodeURIComponent(apiKey)}` +
+    "&units=metric";
 
   try {
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error(
-        response.status === 401
-          ? "Invalid API key or key not activated."
-          : `Weather service error (${response.status}).`
-      );
+      if (response.status === 401) {
+        throw new Error("Invalid or inactive API key.");
+      }
+
+      if (response.status === 429) {
+        throw new Error("Weather API request limit reached.");
+      }
+
+      throw new Error(`Weather service error (${response.status}).`);
     }
 
     const data = await response.json();
@@ -477,9 +806,9 @@ async function getWeather(locationKey) {
 }
 
 
-/* =====================================
-   10. LOAD ALL WEATHER LOCATIONS
-===================================== */
+/* ==========================================
+   16. LOAD ALL WEATHER CARDS
+========================================== */
 
 async function loadAllWeather() {
   const updatedLabel = document.getElementById("weather-updated");
@@ -494,29 +823,28 @@ async function loadAllWeather() {
   ];
 
   await Promise.all(
-    weatherLocations.map(location => getWeather(location))
+    weatherLocations.map(key => getWeather(key))
   );
 
   updatedLabel.textContent =
     "Last checked: " + new Date().toLocaleString();
 }
 
-
-/* =====================================
-   11. REFRESH WEATHER BUTTON
-===================================== */
-
 document
   .getElementById("refresh-weather")
   .addEventListener("click", loadAllWeather);
 
 
-/* =====================================
-   12. INITIALIZE WEBSITE
-===================================== */
+/* ==========================================
+   17. INITIALIZE WEBSITE
+========================================== */
 
-// Load the default sample parcel
-displayParcel("MND123456789");
+renderParcelList();
 
-// Load weather data
+const firstParcel = Object.keys(parcels)[0];
+
+if (firstParcel) {
+  displayParcel(firstParcel);
+}
+
 loadAllWeather();
