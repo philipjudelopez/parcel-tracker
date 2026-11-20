@@ -1,6 +1,10 @@
 
-// ParcelTrack Demo Interactions
-// Vanilla JavaScript only
+// =====================================
+// PARCELTRACK MINDANAO
+// Vanilla JavaScript
+// =====================================
+
+// Get HTML elements
 
 const trackingForm = document.getElementById("track-form");
 
@@ -9,6 +13,7 @@ const trackingInput = document.getElementById("tracking-number");
 const trackingCode = document.getElementById("tracking-code");
 
 const formMessage = document.getElementById("form-message");
+
 
 // Handle tracking form submission
 
@@ -31,21 +36,13 @@ trackingForm.addEventListener("submit", function(event) {
         return;
     }
 
-    // Update tracking number displayed on website
+    // Update displayed tracking number
     trackingCode.textContent =
         trackingNumber.toUpperCase();
 
-    // Display confirmation message
+    // Display confirmation
     formMessage.textContent =
-        "Demo preview: sample shipment details are shown. Connect a courier API for real tracking updates.";
+        "Demo preview: sample Mindanao shipment details are shown. Connect your courier system for live tracking.";
 
 });
 
-// Responsive map illustration
-// SVG automatically scales using CSS
-
-window.addEventListener("resize", function() {
-
-    // No external map library is needed.
-
-});
