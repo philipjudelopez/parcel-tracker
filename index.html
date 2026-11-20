@@ -2,186 +2,409 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#061b2a">
-  <meta name="description" content="Track parcels across Mindanao with route distance, delivery updates, and destination weather.">
-  <title>Mindanao Parcel Tracker</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindanao Parcel Tracker</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
 <div class="app-shell">
-  <aside class="sidebar">
-    <a class="brand" href="#dashboard">
-      <span class="brand-mark">🚚</span>
-      <span class="brand-name">Mindanao<br>Parcel Tracker</span>
-      <em>Track. Know. Deliver.</em>
-    </a>
-    <nav class="side-nav" aria-label="Main navigation">
-      <a class="active" href="#dashboard"><span>⌖</span>Track Parcel</a>
-      <a href="#add-parcel"><span>＋</span>Add Parcel</a>
-      <a href="#about"><span>ⓘ</span>About</a>
-      <a href="#settings"><span>⚙</span>Settings</a>
-    </nav>
-    <div class="sidebar-bottom">
-      <div class="location-chip"><span>📍</span><div><b>Manolo Fortich</b><small>Bukidnon, Mindanao</small></div></div>
-      <p>Bringing deliveries<br>across Mindanao</p>
-    </div>
-  </aside>
 
-  <main class="dashboard" id="dashboard">
-    <header class="topbar">
-      <form id="track-form" class="global-search">
-        <span>⌕</span>
-        <input id="tracking-number" type="text" placeholder="Search parcel by Tracking ID or destination..." autocomplete="off" required>
-        <button type="submit" aria-label="Search">Search</button>
-      </form>
-      <p id="form-message" class="search-feedback" aria-live="polite"></p>
-      <div class="topbar-right">
-        <div class="top-weather"><span>🌤️</span><div><b id="top-temperature">--°C</b><small id="top-condition">Weather loading</small></div></div>
-        <div class="top-date"><b id="current-date">Mindanao</b><small id="current-time">Parcel Network</small></div>
-        <div class="profile-icon">●</div>
-      </div>
-    </header>
-
-    <section class="stats-grid">
-      <article class="stat-card"><div class="stat-icon parcel-icon">📦</div><div><small>Total Parcels</small><strong id="total-parcels">0</strong><span class="stat-trend">● Registered</span></div></article>
-      <article class="stat-card"><div class="stat-icon transit-icon">🚚</div><div><small>In Transit</small><strong id="transit-parcels">0</strong><span class="stat-trend blue">● Moving</span></div></article>
-      <article class="stat-card"><div class="stat-icon delivered-icon">✓</div><div><small>Delivered</small><strong id="delivered-parcels">0</strong><span class="stat-trend">● Completed</span></div></article>
-      <article class="stat-card pending-card"><div class="stat-icon pending-icon">◷</div><div><small>Pending</small><strong id="pending-parcels">0</strong><span class="stat-trend orange">● Awaiting dispatch</span></div></article>
-    </section>
-
-    <section class="dashboard-grid">
-      <div class="map-panel panel">
-        <div class="map-controls">
-          <button class="map-mode active" id="street-mode" type="button">Map</button>
-          <button class="map-mode active" id="satellite-mode" type="button">Satellite</button>
-        </div>
-        <div class="map-compass">N</div>
-        <div id="map" role="region" aria-label="Interactive Mindanao parcel route map"></div>
-        <div class="map-caption">
-          <span><i class="dot origin-dot"></i> Origin</span>
-          <span><i class="dot hub-dot"></i> Sorting hub</span>
-          <span><i class="dot destination-dot"></i> Destination</span>
-        </div>
-      </div>
-
-      <aside class="detail-column">
-        <article class="info-panel tracking-panel">
-          <div class="large-icon">📦</div>
-          <div class="tracking-info">
-            <small>Tracking ID</small>
-            <h2 id="tracking-code">MND123456789</h2>
-            <p class="tracking-route-meta">From <b id="origin-location">Davao City</b> · Next <b id="next-location">Manolo Fortich</b> · To <b id="destination-location">Iligan City</b></p>
-          </div>
-          <span id="shipment-status" class="status-badge">In Transit</span>
-        </article>
-
-        <article class="info-panel route-panel">
-          <div class="panel-symbol blue-symbol">〰</div>
-          <div>
-            <small>Route Distance</small>
-            <h2 id="route-distance">Calculating...</h2>
-            <p id="route-distance-note">Driving route via the road network</p>
-          </div>
-        </article>
-
-        <article class="info-panel destination-panel">
-          <div class="weather-title">
-            <span class="weather-big-icon">🌤️</span>
-            <div>
-              <small>Weather at Destination</small>
-              <h2 id="destination-temperature">--°C</h2>
-              <p id="destination-description">Add an OpenWeather key in Settings</p>
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-art">
+                <span>🚚</span>
             </div>
-          </div>
-          <div class="weather-metrics">
-            <span>💧 Humidity <b id="destination-humidity">--%</b></span>
-            <span>🌬 Wind <b id="destination-wind">--</b></span>
-            <span>☁ Cloud cover <b id="destination-rain">--</b></span>
-          </div>
-        </article>
-      </aside>
-    </section>
-
-    <section class="bottom-grid">
-      <article class="timeline-panel panel">
-        <div class="panel-heading"><span>◷</span><h2>Delivery Timeline</h2></div>
-        <div id="route-track" class="route-track"></div>
-      </article>
-      <article class="promo-panel">
-        <div class="promo-copy">
-          <span>📍</span>
-          <strong>Mindanao<br>Connected</strong>
-          <small>One Delivery at a Time</small>
+            <h2>Mindanao<br>Parcel Tracker</h2>
+            <p>Track. Know. Deliver.</p>
         </div>
-      </article>
-    </section>
 
-    <section class="lower-grid">
-      <article class="panel lower-panel" id="add-parcel">
-        <div class="panel-heading"><span>＋</span><h2>Add New Parcel</h2></div>
-        <form id="add-parcel-form" class="add-parcel-form">
-          <label>Tracking ID<input id="new-tracking-number" placeholder="MPT-20261120-001" required></label>
-          <div class="form-row">
-            <label>Origin<input id="parcel-origin" placeholder="Barangay, city or municipality" required></label>
-            <label>Destination<input id="parcel-destination" placeholder="Barangay, city or municipality" required></label>
-          </div>
-          <p class="form-hint">Enter any place in Mindanao. The map will look up its coordinates automatically.</p>
-          <button class="primary-button" type="submit">＋ Add Parcel</button>
-          <p id="add-parcel-message" class="form-message-dark" aria-live="polite"></p>
-        </form>
-      </article>
+        <nav class="side-nav">
+            <a href="#dashboard" class="nav-link active">
+                <span class="nav-icon">📍</span> Track Parcel
+            </a>
+            <a href="#add-parcel" class="nav-link">
+                <span class="nav-icon">＋</span> Add Parcel
+            </a>
+            <a href="#parcel-management" class="nav-link">
+                <span class="nav-icon">ⓘ</span> Parcel Management
+            </a>
+            <a href="#settings" class="nav-link">
+                <span class="nav-icon">⚙</span> Settings
+            </a>
+        </nav>
 
-      <article class="panel lower-panel">
-        <div class="panel-heading"><span>▤</span><h2>Registered Parcels</h2></div>
-        <div id="parcel-list" class="parcel-list"></div>
-      </article>
-    </section>
-
-    <section class="panel lower-panel weather-section" id="weather">
-      <div class="panel-heading">
-        <span>☀</span><h2>Weather Monitoring</h2>
-        <button id="refresh-weather" class="secondary-button" type="button">Refresh</button>
-      </div>
-      <p id="weather-updated" class="form-hint">Weather data provided by OpenWeatherMap.</p>
-      <div class="weather-grid">
-        <article class="weather-card" id="weather-davao"><h3>Davao City</h3><p class="weather-loading">Loading weather...</p></article>
-        <article class="weather-card" id="weather-manolo"><h3>Manolo Fortich</h3><p class="weather-loading">Loading weather...</p></article>
-        <article class="weather-card" id="weather-cdo"><h3>Cagayan de Oro</h3><p class="weather-loading">Loading weather...</p></article>
-        <article class="weather-card" id="weather-iligan"><h3>Iligan City</h3><p class="weather-loading">Loading weather...</p></article>
-      </div>
-    </section>
-
-    <section class="panel lower-panel" id="settings">
-      <div class="panel-heading"><span>⚙</span><h2>API Settings</h2></div>
-      <form id="api-key-form" class="settings-form">
-        <label>OpenWeatherMap API Key
-          <div class="api-input-row">
-            <input type="password" id="api-key-input" placeholder="Enter your API key">
-            <button type="button" id="toggle-api-key" class="secondary-button">Show</button>
-          </div>
-        </label>
-        <div class="settings-actions">
-          <button class="primary-button" type="submit">Save API Key</button>
-          <button type="button" id="remove-api-key" class="delete-button">Remove Key</button>
+        <div class="sidebar-bottom">
+            <div class="hub-location">
+                <span>📍</span>
+                <div>
+                    <strong>Manolo Fortich</strong>
+                    <small>Bukidnon, Philippines</small>
+                </div>
+            </div>
+            <div class="sidebar-motto">
+                Bringing deliveries<br>across Mindanao
+            </div>
         </div>
-        <p id="api-key-message" class="form-message-dark" aria-live="polite"></p>
-      </form>
-      <p class="security-note">This prototype stores the API key in browser local storage. Use a secure backend proxy before deploying publicly.</p>
-    </section>
+    </aside>
 
-    <footer id="about">Mindanao Parcel Tracker · Track. Know. Deliver. · Map data © OpenStreetMap contributors</footer>
-  </main>
+    <!-- MAIN -->
+    <main class="main-content">
+
+        <!-- TOP BAR -->
+        <header class="topbar">
+            <div class="mobile-brand">
+                <button class="menu-toggle" id="menu-toggle">☰</button>
+                <strong>Mindanao Parcel Tracker</strong>
+            </div>
+
+            <form class="search-bar" id="track-form">
+                <span>⌕</span>
+                <input id="tracking-number"
+                    type="text"
+                    placeholder="Search parcel by Tracking ID or destination..."
+                    required>
+                <button type="submit">Search</button>
+            </form>
+
+            <div class="top-weather">
+                <div class="top-weather-icon">🌤️</div>
+                <div>
+                    <strong id="top-temperature">24°C</strong>
+                    <small id="top-weather-description">Partly Cloudy</small>
+                </div>
+                <div class="top-divider"></div>
+                <div class="top-date">
+                    <strong id="current-date">Loading date...</strong>
+                    <small id="current-time">--:--</small>
+                </div>
+                <div class="profile-icon">👤</div>
+            </div>
+        </header>
+
+        <div id="form-message" class="form-message"></div>
+
+        <!-- DASHBOARD -->
+        <section id="dashboard">
+
+            <!-- STATS -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon parcel-icon">📦</div>
+                    <div class="stat-info">
+                        <span>Total Parcels</span>
+                        <strong id="total-parcels">0</strong>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon transit-icon">🚚</div>
+                    <div class="stat-info">
+                        <span>In Transit</span>
+                        <strong id="transit-parcels">0</strong>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon delivered-icon">✓</div>
+                    <div class="stat-info">
+                        <span>Delivered</span>
+                        <strong id="delivered-parcels">0</strong>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon pending-icon">◷</div>
+                    <div class="stat-info">
+                        <span>Pending</span>
+                        <strong id="pending-parcels">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAP AND RIGHT PANEL -->
+            <div class="main-dashboard-grid">
+
+                <section class="map-panel glass-panel">
+                    <div class="map-top-label">
+                        <div>
+                            <span class="live-dot"></span>
+                            <strong>Mindanao Delivery Network</strong>
+                        </div>
+                        <span class="map-region">MINDANAO, PH</span>
+                    </div>
+
+                    <div class="map-wrapper">
+                        <div id="map"></div>
+
+                        <div class="map-controls">
+                            <button id="street-mode" class="map-mode active">Map</button>
+                            <button id="satellite-mode" class="map-mode">Satellite</button>
+                        </div>
+
+                        <div class="map-compass">N<br>▲</div>
+
+                        <div class="map-legend">
+                            <span><i class="legend-origin"></i> Origin</span>
+                            <span><i class="legend-hub"></i> Main Hub</span>
+                            <span><i class="legend-destination"></i> Destination</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RIGHT SIDE -->
+                <aside class="right-column">
+
+                    <div class="tracking-card glass-panel">
+                        <div class="parcel-emblem">📦</div>
+                        <div class="tracking-card-info">
+                            <small>Tracking ID</small>
+                            <strong id="tracking-code">Select a parcel</strong>
+                        </div>
+                        <span class="status-badge" id="shipment-status">---</span>
+                    </div>
+
+                    <div class="route-card glass-panel">
+                        <div class="route-info-row">
+                            <div class="route-symbol">〰</div>
+                            <div>
+                                <small>Route Distance</small>
+                                <strong id="route-distance">---</strong>
+                                <span id="route-distance-note">Waiting for route</span>
+                            </div>
+                        </div>
+
+                        <div class="route-info-row">
+                            <div class="route-symbol clock-symbol">◷</div>
+                            <div>
+                                <small>Estimated Arrival</small>
+                                <strong id="route-eta">---</strong>
+                                <span id="route-eta-note">Estimated travel time</span>
+                            </div>
+                        </div>
+
+                        <div class="route-endpoints">
+                            <div>
+                                <span>Origin</span>
+                                <strong id="origin-location">---</strong>
+                            </div>
+                            <div>
+                                <span>Next Location</span>
+                                <strong id="next-location">---</strong>
+                            </div>
+                            <div>
+                                <span>Destination</span>
+                                <strong id="destination-location">---</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="destination-weather glass-panel">
+                        <div class="weather-heading">
+                            <div>
+                                <small>Weather at Destination</small>
+                                <h2 id="destination-temperature">--°C</h2>
+                                <p id="destination-description">Weather unavailable</p>
+                            </div>
+                            <div class="weather-big-icon">🌤️</div>
+                        </div>
+
+                        <div class="weather-details">
+                            <div>
+                                <span>💧 Humidity</span>
+                                <strong id="destination-humidity">--%</strong>
+                            </div>
+                            <div>
+                                <span>≋ Wind</span>
+                                <strong id="destination-wind">-- m/s</strong>
+                            </div>
+                            <div>
+                                <span>☂ Rain</span>
+                                <strong id="destination-rain">-- mm</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                </aside>
+            </div>
+
+            <!-- BOTTOM DASHBOARD -->
+            <div class="bottom-dashboard-grid">
+
+                <section class="timeline-panel glass-panel">
+                    <div class="timeline-heading">
+                        <span>◷</span>
+                        <h2>Delivery Timeline</h2>
+                    </div>
+
+                    <div id="route-track" class="timeline">
+                        <p class="empty-state">Select a parcel to view its delivery timeline.</p>
+                    </div>
+                </section>
+
+                <div class="scenic-card">
+                    <div class="scenic-overlay">
+                        <span class="scenic-pin">📍</span>
+                        <div class="scenic-title">Mindanao<br>Connected</div>
+                        <p>One Delivery at a Time</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ADD PARCEL -->
+        <section id="add-parcel" class="content-panel glass-panel">
+            <div class="section-title">
+                <div>
+                    <h2>Add New Parcel</h2>
+                    <p>Register a new delivery in the Mindanao network.</p>
+                </div>
+            </div>
+
+            <form id="add-parcel-form" class="parcel-form">
+                <div class="form-group">
+                    <label>Tracking Number</label>
+                    <input id="new-tracking-number" type="text"
+                        placeholder="Example: MND123456789" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Origin Location</label>
+                    <input id="parcel-origin" type="text"
+                        placeholder="Enter any Mindanao location" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Destination Location</label>
+                    <input id="parcel-destination" type="text"
+                        placeholder="Enter any Mindanao location" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Parcel Status</label>
+                    <select id="parcel-status">
+                        <option value="Pending">Pending</option>
+                        <option value="In Transit">In Transit</option>
+                        <option value="Delivered">Delivered</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn" id="add-parcel-button">
+                        + Register Parcel
+                    </button>
+                </div>
+                <div id="add-parcel-message" class="form-message"></div>
+            </form>
+        </section>
+
+        <!-- PARCEL MANAGEMENT -->
+        <section id="parcel-management" class="content-panel glass-panel">
+            <div class="section-title">
+                <div>
+                    <h2>Parcel Management</h2>
+                    <p>View, track, and manage registered shipments.</p>
+                </div>
+                <button id="refresh-parcels" class="secondary-btn">↻ Refresh</button>
+            </div>
+
+            <div class="table-container">
+                <table class="parcel-table">
+                    <thead>
+                        <tr>
+                            <th>Tracking ID</th>
+                            <th>Origin</th>
+                            <th>Destination</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="parcel-list"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- WEATHER MONITORING -->
+        <section class="content-panel glass-panel">
+            <div class="section-title">
+                <div>
+                    <h2>Mindanao Weather Monitoring</h2>
+                    <p>Weather conditions across selected monitoring locations.</p>
+                </div>
+                <button id="refresh-weather" class="secondary-btn">↻ Refresh Weather</button>
+            </div>
+
+            <div class="weather-grid">
+                <div class="weather-card" id="weather-davao">
+                    <h3>Davao City</h3><p>Loading weather...</p>
+                </div>
+                <div class="weather-card" id="weather-manolo">
+                    <h3>Manolo Fortich</h3><p>Loading weather...</p>
+                </div>
+                <div class="weather-card" id="weather-cdo">
+                    <h3>Cagayan de Oro</h3><p>Loading weather...</p>
+                </div>
+                <div class="weather-card" id="weather-iligan">
+                    <h3>Iligan City</h3><p>Loading weather...</p>
+                </div>
+            </div>
+            <p id="weather-updated" class="updated-text">Weather data not yet updated.</p>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="settings" class="content-panel glass-panel">
+            <div class="section-title">
+                <div>
+                    <h2>System Settings</h2>
+                    <p>Configure your OpenWeather API key.</p>
+                </div>
+            </div>
+
+            <form id="api-key-form" class="api-form">
+                <div class="form-group">
+                    <label for="api-key-input">OpenWeather API Key</label>
+                    <div class="api-input-wrapper">
+                        <input id="api-key-input" type="password"
+                            placeholder="Enter your API key">
+                        <button type="button" id="toggle-api-key" class="secondary-btn">Show</button>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">Save API Key</button>
+                    <button type="button" id="remove-api-key" class="danger-btn">Remove Key</button>
+                </div>
+                <div id="api-key-message" class="form-message"></div>
+            </form>
+
+            <p class="settings-note">
+                Get your API key from
+                <a href="https://openweathermap.org/api" target="_blank" rel="noopener">OpenWeather</a>.
+            </p>
+        </section>
+
+        <footer class="footer">
+            <span>© 2026 Mindanao Parcel Tracker</span>
+            <span>Main Sorting Hub: Manolo Fortich, Bukidnon</span>
+        </footer>
+
+    </main>
 </div>
 
-<div id="notification-container" class="notification-container" aria-live="polite" aria-atomic="false"></div>
+<!-- NOTIFICATIONS -->
+<div id="notification-container" class="notification-container"
+    aria-live="polite"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="script.js"></script>
+
 </body>
 </html>

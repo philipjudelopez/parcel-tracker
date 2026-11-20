@@ -1,1485 +1,1190 @@
 
 /* ==========================================
-   PARCELTRACK MINDANAO
-   Parcel Management + Leaflet + OpenWeather
-========================================== */
-
-
-/* ==========================================
-   1. CONFIGURATION AND STORAGE
+   MINDANAO PARCEL TRACKER
+   Redesigned Dashboard JavaScript
 ========================================== */
 
 const PARCEL_STORAGE_KEY = "parceltrack_mindanao_parcels";
 const API_STORAGE_KEY = "parceltrack_openweather_key";
+const LOCATION_STORAGE_KEY = "parceltrack_custom_locations";
 
-/* VISIBLE NOTIFICATION SYSTEM */
-function showNotification(message, type = "info", title = "") {
-  const container = document.getElementById("notification-container");
-  if (!container) return;
-
-  const settings = {
-    success: { icon: "✓", title: "Success" },
-    error: { icon: "✕", title: "Something went wrong" },
-    warning: { icon: "!", title: "Please check" },
-    info: { icon: "i", title: "Notification" }
-  };
-
-  const selected = settings[type] || settings.info;
-  const toast = document.createElement("div");
-  toast.className = `notification ${type}`;
-
-  const icon = document.createElement("span");
-  icon.className = "notification-icon";
-  icon.textContent = selected.icon;
-
-  const content = document.createElement("div");
-  content.className = "notification-content";
-
-  const heading = document.createElement("div");
-  heading.className = "notification-title";
-  heading.textContent = title || selected.title;
-
-  const body = document.createElement("div");
-  body.className = "notification-message";
-  body.textContent = message;
-
-  content.append(heading, body);
-
-  const close = document.createElement("button");
-  close.className = "notification-close";
-  close.type = "button";
-  close.setAttribute("aria-label", "Dismiss notification");
-  close.textContent = "×";
-
-  toast.append(icon, content, close);
-  container.appendChild(toast);
-
-  requestAnimationFrame(() => toast.classList.add("show"));
-
-  let dismissed = false;
-
-  const dismiss = () => {
-    if (dismissed) return;
-    dismissed = true;
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  };
-
-  close.addEventListener("click", dismiss);
-  setTimeout(dismiss, 6500);
-}
-
-const locations = {
-  davao: {
-    name: "Davao City",
-    lat: 7.1907,
-    lng: 125.4553,
-    weatherCard: "weather-davao"
-  },
-  manolo: {
-    name: "Manolo Fortich",
-    lat: 8.3697,
-    lng: 124.8642,
-    weatherCard: "weather-manolo"
-  },
-  cdo: {
-    name: "Cagayan de Oro",
-    lat: 8.4542,
-    lng: 124.6319,
-    weatherCard: "weather-cdo"
-  },
-  iligan: {
-    name: "Iligan City",
-    lat: 8.2280,
-    lng: 124.2452,
-    weatherCard: "weather-iligan"
-  },
-  butuan: {
-    name: "Butuan City",
-    lat: 8.9475,
-    lng: 125.5406,
-    weatherCard: null
-  },
-  gensan: {
-    name: "General Santos City",
-    lat: 6.1164,
-    lng: 125.1716,
-    weatherCard: null
-  }
+const HUB = {
+    name: "Manolo Fortich, Bukidnon",
+    lat: 8.3695,
+    lng: 124.8658
 };
 
-const CUSTOM_LOCATIONS_STORAGE_KEY = "parceltrack_custom_locations";
+const locations = {
+    "Davao City": { lat: 7.1907, lng: 125.4553 },
+    "Manolo Fortich": { lat: 8.3695, lng: 124.8658 },
+    "Manolo Fortich, Bukidnon": { lat: 8.3695, lng: 124.8658 },
+    "Cagayan de Oro": { lat: 8.4542, lng: 124.6319 },
+    "Iligan City": { lat: 8.2280, lng: 124.2452 },
+    "Butuan City": { lat: 8.9475, lng: 125.5406 },
+    "General Santos City": { lat: 6.1164, lng: 125.1716 },
+    "Malaybalay City": { lat: 8.1575, lng: 125.1278 },
+    "Valencia City": { lat: 7.9064, lng: 125.0942 },
+    "Ozamiz City": { lat: 8.1481, lng: 123.8405 },
+    "Dipolog City": { lat: 8.5880, lng: 123.3409 },
+    "Pagadian City": { lat: 7.8257, lng: 123.4370 },
+    "Surigao City": { lat: 9.7842, lng: 125.4888 },
+    "Koronadal City": { lat: 6.5031, lng: 124.8469 },
+    "Bislig City": { lat: 8.2153, lng: 126.3166 }
+};
 
-try {
-  const savedCustomLocations = JSON.parse(
-    localStorage.getItem(CUSTOM_LOCATIONS_STORAGE_KEY) || "{}"
-  );
+let parcels = [];
+let customLocations = loadCustomLocations();
+let selectedParcel = null;
+let map;
+let streetLayer;
+let satelliteLayer;
+let markerLayer;
+let routeLayer;
+let displayRequest = 0;
 
-  if (
-    savedCustomLocations &&
-    typeof savedCustomLocations === "object"
-  ) {
-    Object.assign(locations, savedCustomLocations);
-  }
-} catch (error) {
-  console.warn("Could not restore custom places:", error);
+const weatherCache = new Map();
+const WEATHER_CACHE_TIME = 5 * 60 * 1000;
+
+function normalizeStatus(status) {
+    const value = String(status || "").toLowerCase();
+
+    if (value === "delivered") return "Delivered";
+    if (value === "in transit" || value === "transit") return "In Transit";
+
+    return "Pending";
+}
+
+function loadCustomLocations() {
+    try {
+        return JSON.parse(localStorage.getItem(LOCATION_STORAGE_KEY)) || {};
+    } catch {
+        return {};
+    }
 }
 
 function saveCustomLocations() {
-  const custom = Object.fromEntries(
-    Object.entries(locations).filter(([key]) =>
-      key.startsWith("custom_")
-    )
-  );
-
-  localStorage.setItem(
-    CUSTOM_LOCATIONS_STORAGE_KEY,
-    JSON.stringify(custom)
-  );
+    localStorage.setItem(
+        LOCATION_STORAGE_KEY,
+        JSON.stringify(customLocations)
+    );
 }
 
-
-/* ==========================================
-   2. SAMPLE PARCELS
-========================================== */
-
-const sampleParcels = {
-  MND123456789: {
-    status: "In Transit",
-    origin: "davao",
-    destination: "iligan"
-  },
-  MND987654321: {
-    status: "In Transit",
-    origin: "cdo",
-    destination: "butuan"
-  },
-  MND555666777: {
-    status: "In Transit",
-    origin: "gensan",
-    destination: "davao"
-  }
-};
-
-let parcels = loadParcels();
-let selectedTrackingNumber = null;
-
-
-/* ==========================================
-   3. LOAD AND SAVE PARCELS
-========================================== */
-
 function loadParcels() {
-  try {
-    const saved = localStorage.getItem(PARCEL_STORAGE_KEY);
+    const samples = [
+        {
+            tracking: "MND123456789",
+            origin: "Davao City",
+            destination: "Iligan City",
+            status: "In Transit",
+            sample: true
+        },
+        {
+            tracking: "MND987654321",
+            origin: "Cagayan de Oro",
+            destination: "Butuan City",
+            status: "Pending",
+            sample: true
+        },
+        {
+            tracking: "MND555666777",
+            origin: "General Santos City",
+            destination: "Davao City",
+            status: "Delivered",
+            sample: true
+        }
+    ];
 
-    if (saved) {
-      const parsed = JSON.parse(saved);
+    try {
+        const saved = localStorage.getItem(PARCEL_STORAGE_KEY);
+        parcels = saved === null ? samples : JSON.parse(saved);
 
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        !Array.isArray(parsed)
-      ) {
-        return parsed;
-      }
+        if (!Array.isArray(parcels)) parcels = samples;
+    } catch {
+        parcels = samples;
     }
-  } catch (error) {
-    console.error("Could not load parcel records:", error);
-  }
 
-  return { ...sampleParcels };
+    parcels = parcels.map(parcel => ({
+        ...parcel,
+        status: normalizeStatus(parcel.status)
+    }));
+
+    saveParcels();
 }
 
 function saveParcels() {
-  try {
-    localStorage.setItem(
-      PARCEL_STORAGE_KEY,
-      JSON.stringify(parcels)
-    );
-    return true;
-  } catch (error) {
-    console.error("Could not save parcel records:", error);
-    return false;
-  }
+    try {
+        localStorage.setItem(PARCEL_STORAGE_KEY, JSON.stringify(parcels));
+    } catch (error) {
+        console.error(error);
+        showNotification("Unable to save parcel records.", "error");
+    }
 }
 
+/* NOTIFICATIONS */
 
-/* ==========================================
-   4. API KEY SETTINGS
-========================================== */
+function showNotification(message, type = "info", title = "") {
+    const container = document.getElementById("notification-container");
+    if (!container) return;
+
+    const icons = {
+        success: "✓",
+        error: "✕",
+        warning: "⚠",
+        info: "ℹ"
+    };
+
+    const headings = {
+        success: "Success",
+        error: "Error",
+        warning: "Warning",
+        info: "Information"
+    };
+
+    const notification = document.createElement("div");
+    notification.className = `notification ${type}`;
+
+    const icon = document.createElement("span");
+    icon.className = "notification-icon";
+    icon.textContent = icons[type] || icons.info;
+
+    const content = document.createElement("div");
+    content.className = "notification-content";
+
+    const heading = document.createElement("strong");
+    heading.textContent = title || headings[type] || "Notification";
+
+    const text = document.createElement("p");
+    text.textContent = message;
+
+    const close = document.createElement("button");
+    close.className = "notification-close";
+    close.textContent = "×";
+    close.type = "button";
+    close.setAttribute("aria-label", "Close notification");
+
+    content.append(heading, text);
+    notification.append(icon, content, close);
+    container.appendChild(notification);
+
+    const timer = setTimeout(() => notification.remove(), 6500);
+
+    close.addEventListener("click", () => {
+        clearTimeout(timer);
+        notification.remove();
+    });
+}
+
+/* API KEY */
 
 function getApiKey() {
-  return localStorage.getItem(API_STORAGE_KEY) || "";
+    return localStorage.getItem(API_STORAGE_KEY) || "";
 }
 
-const apiKeyInput = document.getElementById("api-key-input");
-const apiKeyForm = document.getElementById("api-key-form");
-const apiKeyMessage = document.getElementById("api-key-message");
+function initializeApiSettings() {
+    const form = document.getElementById("api-key-form");
+    const input = document.getElementById("api-key-input");
+    const toggle = document.getElementById("toggle-api-key");
+    const remove = document.getElementById("remove-api-key");
+    const message = document.getElementById("api-key-message");
 
-apiKeyForm.addEventListener("submit", function(event) {
-  event.preventDefault();
+    input.value = getApiKey();
 
-  const key = apiKeyInput.value.trim();
+    form.addEventListener("submit", event => {
+        event.preventDefault();
 
-  if (!key) {
-    apiKeyMessage.textContent = "Please enter an API key.";
-    showNotification(
-      "Enter your OpenWeatherMap API key before saving.",
-      "warning",
-      "API key required"
-    );
-    return;
-  }
+        const key = input.value.trim();
 
-  try {
-    localStorage.setItem(API_STORAGE_KEY, key);
+        if (!key) {
+            message.textContent = "Please enter an API key.";
+            message.className = "form-message error";
+            return;
+        }
 
-    apiKeyInput.value = "";
-    apiKeyMessage.textContent = "API key saved successfully.";
+        localStorage.setItem(API_STORAGE_KEY, key);
+        weatherCache.clear();
 
-    showNotification(
-      "Your OpenWeatherMap API key has been saved.",
-      "success",
-      "Settings updated"
-    );
+        message.textContent = "API key saved successfully.";
+        message.className = "form-message success";
 
-    loadAllWeather();
-
-    if (selectedTrackingNumber && parcels[selectedTrackingNumber]) {
-      loadDestinationWeather(
-        locations[parcels[selectedTrackingNumber].destination]
-      );
-    }
-  } catch (error) {
-    apiKeyMessage.textContent =
-      "Could not save API key in this browser.";
-
-    showNotification(
-      "The API key could not be saved in this browser.",
-      "error",
-      "Unable to save key"
-    );
-  }
-});
-
-document
-  .getElementById("toggle-api-key")
-  .addEventListener("click", function() {
-    const isHidden = apiKeyInput.type === "password";
-
-    apiKeyInput.type = isHidden ? "text" : "password";
-    this.textContent = isHidden ? "Hide" : "Show";
-  });
-
-document
-  .getElementById("remove-api-key")
-  .addEventListener("click", function() {
-    localStorage.removeItem(API_STORAGE_KEY);
-
-    apiKeyInput.value = "";
-    apiKeyInput.type = "password";
-
-    apiKeyMessage.textContent = "API key removed.";
-
-    showNotification(
-      "The saved OpenWeatherMap API key was removed.",
-      "success",
-      "API key removed"
-    );
-
-    loadAllWeather();
-  });
-
-
-/* ==========================================
-   5. LEAFLET MAP
-========================================== */
-
-const map = L.map("map").setView([7.9, 125.0], 7);
-
-// Responsive Leaflet map resizing.
-let mapResizeFrame = null;
-
-function refreshMapSize() {
-  if (mapResizeFrame) {
-    cancelAnimationFrame(mapResizeFrame);
-  }
-
-  mapResizeFrame = requestAnimationFrame(() => {
-    map.invalidateSize({
-      pan: false,
-      animate: false
+        showNotification("OpenWeather API key saved.", "success");
+        loadAllWeather();
+        updateSelectedWeather();
     });
 
-    mapResizeFrame = null;
-  });
+    toggle.addEventListener("click", () => {
+        const hidden = input.type === "password";
+        input.type = hidden ? "text" : "password";
+        toggle.textContent = hidden ? "Hide" : "Show";
+    });
+
+    remove.addEventListener("click", () => {
+        localStorage.removeItem(API_STORAGE_KEY);
+        input.value = "";
+        weatherCache.clear();
+
+        message.textContent = "API key removed.";
+        message.className = "form-message success";
+
+        resetWeatherDisplays();
+        showNotification("Weather API key removed.", "warning");
+    });
 }
 
-window.addEventListener("resize", refreshMapSize, {
-  passive: true
-});
+/* MAP */
 
-window.addEventListener("orientationchange", () => {
-  setTimeout(refreshMapSize, 180);
-}, {
-  passive: true
-});
+function initializeMap() {
+    map = L.map("map", {
+        zoomControl: true,
+        scrollWheelZoom: true
+    }).setView([7.9, 125.0], 7);
 
-if ("ResizeObserver" in window) {
-  const mapPanelObserver = new ResizeObserver(refreshMapSize);
-  const mapPanel = document.querySelector(".map-panel");
+    streetLayer = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            attribution: "&copy; OpenStreetMap contributors",
+            maxZoom: 19
+        }
+    );
 
-  if (mapPanel) {
-    mapPanelObserver.observe(mapPanel);
-  }
+    satelliteLayer = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+            attribution: "Tiles &copy; Esri",
+            maxZoom: 19
+        }
+    );
+
+    satelliteLayer.addTo(map);
+
+    markerLayer = L.layerGroup().addTo(map);
+    routeLayer = L.layerGroup().addTo(map);
+
+    document.getElementById("street-mode").addEventListener("click", () => {
+        map.removeLayer(satelliteLayer);
+        streetLayer.addTo(map);
+        setMapMode("street");
+    });
+
+    document.getElementById("satellite-mode").addEventListener("click", () => {
+        map.removeLayer(streetLayer);
+        satelliteLayer.addTo(map);
+        setMapMode("satellite");
+    });
+
+    window.addEventListener("resize", () => {
+        setTimeout(() => map.invalidateSize(), 150);
+    });
+
+    if ("ResizeObserver" in window) {
+        new ResizeObserver(() => map.invalidateSize())
+            .observe(document.getElementById("map"));
+    }
 }
 
-const streetTiles = L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {
-    maxZoom: 19,
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }
-);
+function setMapMode(mode) {
+    document.getElementById("street-mode").classList.toggle(
+        "active", mode === "street"
+    );
 
-const satelliteTiles = L.tileLayer(
-  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-  {
-    maxZoom: 19,
-    attribution: "Tiles &copy; Esri"
-  }
-).addTo(map);
-
-document.getElementById("street-mode").addEventListener("click", () => {
-  if (map.hasLayer(satelliteTiles)) {
-    map.removeLayer(satelliteTiles);
-  }
-
-  if (!map.hasLayer(streetTiles)) {
-    streetTiles.addTo(map);
-  }
-
-  document.getElementById("street-mode").classList.add("active");
-  document.getElementById("satellite-mode").classList.remove("active");
-});
-
-document.getElementById("satellite-mode").addEventListener("click", () => {
-  if (map.hasLayer(streetTiles)) {
-    map.removeLayer(streetTiles);
-  }
-
-  if (!map.hasLayer(satelliteTiles)) {
-    satelliteTiles.addTo(map);
-  }
-
-  document.getElementById("satellite-mode").classList.add("active");
-  document.getElementById("street-mode").classList.remove("active");
-});
-
-const markerLayer = L.layerGroup().addTo(map);
-let routeLine = null;
-
-
-function createMarkerIcon(color) {
-  return L.divIcon({
-    className: "custom-map-marker",
-    html: `
-      <div style="
-        width:18px;
-        height:18px;
-        border-radius:50%;
-        background:${color};
-        border:3px solid white;
-        box-shadow:0 2px 7px rgba(0,0,0,0.35);
-      "></div>
-    `,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9]
-  });
+    document.getElementById("satellite-mode").classList.toggle(
+        "active", mode === "satellite"
+    );
 }
 
+/* LOCATIONS */
 
-/* ==========================================
-   6. CREATE PARCEL ROUTE
-========================================== */
+function findLocation(name) {
+    const all = { ...locations, ...customLocations };
+
+    if (all[name]) return all[name];
+
+    const key = Object.keys(all).find(
+        item => item.toLowerCase() === String(name).toLowerCase()
+    );
+
+    return key ? all[key] : null;
+}
+
+async function geocodeLocation(place) {
+    const params = new URLSearchParams({
+        q: `${place}, Mindanao, Philippines`,
+        format: "jsonv2",
+        limit: "1",
+        countrycodes: "ph",
+        viewbox: "121.8,10.1,127.9,4.4",
+        bounded: "1"
+    });
+
+    const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?${params}`,
+        { headers: { Accept: "application/json" } }
+    );
+
+    if (!response.ok) {
+        throw new Error("Location search service is unavailable.");
+    }
+
+    const results = await response.json();
+
+    if (!results.length) {
+        throw new Error(`Location "${place}" was not found in the search area.`);
+    }
+
+    const result = results[0];
+
+    const coordinates = {
+        lat: Number(result.lat),
+        lng: Number(result.lon),
+        displayName: result.display_name
+    };
+
+    if (!Number.isFinite(coordinates.lat) || !Number.isFinite(coordinates.lng)) {
+        throw new Error("Invalid location coordinates.");
+    }
+
+    customLocations[place] = coordinates;
+    saveCustomLocations();
+
+    return coordinates;
+}
+
+async function resolveLocation(place) {
+    return findLocation(place) || await geocodeLocation(place);
+}
+
+/* ROUTE */
 
 function createParcelRoute(parcel) {
-  const routeKeys = [];
+    const origin = findLocation(parcel.origin);
+    const destination = findLocation(parcel.destination);
 
-  function addLocation(key) {
-    if (
-      locations[key] &&
-      routeKeys[routeKeys.length - 1] !== key
-    ) {
-      routeKeys.push(key);
-    }
-  }
+    if (!origin || !destination) return [];
 
-  addLocation(parcel.origin);
+    const route = [{
+        name: parcel.origin,
+        ...origin,
+        type: "origin"
+    }];
 
-  // Manolo Fortich is the main sorting hub.
-  if (
-    parcel.origin !== "manolo" &&
-    parcel.destination !== "manolo"
-  ) {
-    addLocation("manolo");
-  }
+    const originIsHub = parcel.origin.toLowerCase().includes("manolo fortich");
+    const destinationIsHub = parcel.destination.toLowerCase().includes("manolo fortich");
 
-  addLocation(parcel.destination);
-
-  return routeKeys.map((key, index) => ({
-    location: key,
-    description:
-      index === 0
-        ? "Parcel received"
-        : index === routeKeys.length - 1
-          ? "Final destination"
-          : "Parcel processed at sorting hub",
-    detail:
-      key === "manolo"
-        ? "Main distribution center"
-        : index === 0
-          ? "Origin facility"
-          : "Delivery facility",
-    status:
-      index === routeKeys.length - 1
-        ? "current"
-        : "completed"
-  }));
-}
-
-
-/* ==========================================
-   7. DISPLAY ROUTE ON MAP
-========================================== */
-
-function updateMap(parcel, routeData) {
-  markerLayer.clearLayers();
-
-  if (routeLine) {
-    map.removeLayer(routeLine);
-    routeLine = null;
-  }
-
-  const route = createParcelRoute(parcel);
-  const coordinates = [];
-
-  route.forEach((stop, index) => {
-    const place = locations[stop.location];
-
-    if (!place) return;
-
-    const point = [place.lat, place.lng];
-    coordinates.push(point);
-
-    let markerColor = "#1677d2";
-
-    if (index === 0) {
-      markerColor = "#16a36a";
+    if (!originIsHub && !destinationIsHub) {
+        route.push({
+            name: HUB.name,
+            lat: HUB.lat,
+            lng: HUB.lng,
+            type: "hub"
+        });
     }
 
-    if (index === route.length - 1) {
-      markerColor = "#ed9a32";
-    }
-
-    if (stop.location === "manolo") {
-      markerColor = "#1677d2";
-    }
-
-    L.marker(point, {
-      icon: createMarkerIcon(markerColor)
-    })
-      .bindPopup(`
-        <strong>${place.name}</strong><br>
-        ${stop.description}<br>
-        <small>${stop.detail}</small>
-        <div class="pin-weather" id="pin-weather-${stop.location}">
-          <strong>Weather:</strong> Loading...
-        </div>
-      `)
-      .on("popupopen", () => loadPinWeather(stop.location))
-      .addTo(markerLayer);
-  });
-
-  if (coordinates.length > 1) {
-    const roadCoordinates = routeData && routeData.geometry
-      ? routeData.geometry.coordinates.map(point => [
-          point[1],
-          point[0]
-        ])
-      : coordinates;
-
-    routeLine = L.polyline(roadCoordinates, {
-      color: "#1677d2",
-      weight: 5,
-      opacity: 0.85,
-      dashArray: routeData && routeData.geometry ? null : "10, 8"
-    }).addTo(map);
-
-    map.fitBounds(routeLine.getBounds(), {
-      padding: [45, 45]
+    route.push({
+        name: parcel.destination,
+        ...destination,
+        type: "destination"
     });
-  } else if (coordinates.length === 1) {
-    map.setView(coordinates[0], 10);
-  }
+
+    return route;
 }
 
+function markerIcon(type) {
+    const colors = {
+        origin: "#2689ff",
+        hub: "#ffad39",
+        destination: "#19dc91"
+    };
 
-/* ==========================================
-   8. UPDATE TIMELINE
-========================================== */
+    const color = colors[type] || "#2689ff";
 
-function updateTimeline(parcel) {
-  const routeTrack = document.getElementById("route-track");
-
-  routeTrack.replaceChildren();
-
-  const route = createParcelRoute(parcel);
-
-  route.forEach(stop => {
-    const place = locations[stop.location];
-
-    const element = document.createElement("div");
-    element.className = `route-stop ${stop.status}`;
-
-    const marker = document.createElement("div");
-    marker.className = "route-marker";
-    marker.textContent =
-      stop.status === "completed" ? "✓" : "●";
-
-    const info = document.createElement("div");
-    info.className = "route-info";
-
-    const heading = document.createElement("h4");
-    heading.textContent = place.name;
-
-    const description = document.createElement("p");
-    description.textContent = stop.description;
-
-    const detail = document.createElement("small");
-    detail.textContent = stop.detail;
-
-    info.append(heading, description, detail);
-    element.append(marker, info);
-    routeTrack.appendChild(element);
-  });
+    return L.divIcon({
+        className: "parcel-marker",
+        html: `<div style="
+            width:19px;height:19px;border-radius:50%;
+            background:${color};border:3px solid white;
+            box-shadow:0 0 12px ${color};
+        "></div>`,
+        iconSize: [19, 19],
+        iconAnchor: [9, 9]
+    });
 }
 
+function updateMap(route, roadCoordinates = null) {
+    markerLayer.clearLayers();
+    routeLayer.clearLayers();
 
-/* ==========================================
-   9. AUTOMATIC ROAD ROUTE DISTANCE
-========================================== */
+    if (!route.length) return;
 
-function formatDistance(meters) {
-  if (!Number.isFinite(meters)) return "Unavailable";
+    const points = [];
 
-  if (meters < 1000) {
-    return `${Math.round(meters)} m`;
-  }
+    route.forEach(point => {
+        const marker = L.marker(
+            [point.lat, point.lng],
+            { icon: markerIcon(point.type) }
+        ).addTo(markerLayer);
 
-  return `${(meters / 1000).toFixed(1)} km`;
+        const popup = document.createElement("div");
+        popup.textContent = `${point.name} — Open marker for weather`;
+        marker.bindPopup(popup);
+
+        marker.on("popupopen", async () => {
+            popup.textContent = `${point.name} — Loading weather...`;
+
+            try {
+                const weather = await getWeather(point.lat, point.lng);
+
+                popup.textContent = weather
+                    ? `${point.name} | ${Math.round(weather.main.temp)}°C | ${weather.weather[0].description}`
+                    : `${point.name} | Add an API key to view weather`;
+            } catch {
+                popup.textContent = `${point.name} | Weather unavailable`;
+            }
+        });
+
+        points.push([point.lat, point.lng]);
+    });
+
+    if (roadCoordinates?.length) {
+        L.polyline(roadCoordinates, {
+            color: "#12dfff",
+            weight: 5,
+            opacity: 0.95
+        }).addTo(routeLayer);
+    } else if (points.length > 1) {
+        L.polyline(points, {
+            color: "#12dfff",
+            weight: 4,
+            dashArray: "8, 10"
+        }).addTo(routeLayer);
+    }
+
+    const bounds = L.latLngBounds(points);
+
+    if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [35, 35], maxZoom: 10 });
+    }
+}
+
+/* DISTANCE AND ETA */
+
+function haversineDistance(a, b) {
+    const earth = 6371;
+    const rad = Math.PI / 180;
+
+    const lat1 = a.lat * rad;
+    const lat2 = b.lat * rad;
+    const deltaLat = (b.lat - a.lat) * rad;
+    const deltaLng = (b.lng - a.lng) * rad;
+
+    const value =
+        Math.sin(deltaLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) *
+        Math.sin(deltaLng / 2) ** 2;
+
+    return earth * 2 * Math.atan2(
+        Math.sqrt(value),
+        Math.sqrt(1 - value)
+    );
+}
+
+function formatDuration(seconds) {
+    const minutes = Math.max(1, Math.round(seconds / 60));
+    const hours = Math.floor(minutes / 60);
+    const remaining = minutes % 60;
+
+    if (!hours) return `${remaining} min`;
+    if (!remaining) return `${hours} hr`;
+
+    return `${hours} hr ${remaining} min`;
 }
 
 async function calculateRoadRoute(route) {
-  const validPlaces = route
-    .map(stop => locations[stop.location])
-    .filter(Boolean);
+    const coordinates = route
+        .map(point => `${point.lng},${point.lat}`)
+        .join(";");
 
-  if (validPlaces.length < 2) {
-    return {
-      distance: 0,
-      geometry: null,
-      source: "single location"
-    };
-  }
+    const url =
+        `https://router.project-osrm.org/route/v1/driving/${coordinates}` +
+        "?overview=full&geometries=geojson";
 
-  const coordinates = validPlaces
-    .map(place => `${place.lng},${place.lat}`)
-    .join(";");
-
-  const url =
-    `https://router.project-osrm.org/route/v1/driving/${coordinates}` +
-    "?overview=full&geometries=geojson&steps=false";
-
-  try {
     const response = await fetch(url);
 
-    if (!response.ok) {
-      throw new Error(`Routing service error (${response.status})`);
-    }
+    if (!response.ok) throw new Error("Routing service unavailable.");
 
     const data = await response.json();
 
-    if (
-      data.code !== "Ok" ||
-      !data.routes ||
-      !data.routes.length
-    ) {
-      throw new Error("No road route was returned.");
+    if (data.code !== "Ok" || !data.routes?.length) {
+        throw new Error("No road route found.");
     }
 
-    return {
-      distance: data.routes[0].distance,
-      geometry: data.routes[0].geometry,
-      source: "road route"
-    };
-  } catch (error) {
-    console.warn("Road route calculation failed:", error);
+    const result = data.routes[0];
 
+    return {
+        distance: result.distance / 1000,
+        duration: result.duration,
+        coordinates: result.geometry.coordinates.map(
+            coordinate => [coordinate[1], coordinate[0]]
+        ),
+        estimated: false
+    };
+}
+
+function fallbackRoute(route) {
     let distance = 0;
-    const toRad = value => value * Math.PI / 180;
 
-    for (let i = 1; i < validPlaces.length; i++) {
-      const a = validPlaces[i - 1];
-      const b = validPlaces[i];
-
-      const dLat = toRad(b.lat - a.lat);
-      const dLng = toRad(b.lng - a.lng);
-
-      const h =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(a.lat)) *
-        Math.cos(toRad(b.lat)) *
-        Math.sin(dLng / 2) ** 2;
-
-      distance +=
-        6371000 *
-        2 *
-        Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    for (let i = 0; i < route.length - 1; i++) {
+        distance += haversineDistance(route[i], route[i + 1]);
     }
+
+    const estimatedDistance = distance * 1.35;
+    const duration = estimatedDistance / 40 * 3600;
 
     return {
-      distance,
-      geometry: null,
-      source: "straight-line estimate"
+        distance: estimatedDistance,
+        duration,
+        coordinates: null,
+        estimated: true
     };
-  }
 }
 
-
-/* ==========================================
-   10. DISPLAY SELECTED PARCEL
-========================================== */
-
-async function displayParcel(trackingNumber) {
-  const parcel = parcels[trackingNumber];
-  const message = document.getElementById("form-message");
-
-  if (!parcel) {
-    message.textContent =
-      "Tracking number not found. Please check and try again.";
-
-    message.style.color = "#ffb7b7";
-
-    showNotification(
-      "No parcel matches that tracking ID or destination. Check your search and try again.",
-      "error",
-      "Parcel not found"
-    );
-
-    return;
-  }
-
-  const origin = locations[parcel.origin];
-  const destination = locations[parcel.destination];
-
-  if (!origin || !destination) {
-    message.textContent =
-      "This parcel has invalid location information.";
-
-    showNotification(
-      "This parcel has missing or invalid origin/destination coordinates.",
-      "error",
-      "Invalid parcel route"
-    );
-
-    return;
-  }
-
-  selectedTrackingNumber = trackingNumber;
-
-  const route = createParcelRoute(parcel);
-
-  const nextLocation = route[1]
-    ? locations[route[1].location].name
-    : destination.name;
-
-  document.getElementById("tracking-code").textContent =
-    trackingNumber;
-
-  document.getElementById("shipment-status").textContent =
-    parcel.status;
-
-  document.getElementById("origin-location").textContent =
-    origin.name;
-
-  document.getElementById("destination-location").textContent =
-    destination.name;
-
-  document.getElementById("next-location").textContent =
-    nextLocation;
-
-  const distanceElement = document.getElementById("route-distance");
-  const distanceNote = document.getElementById("route-distance-note");
-
-  distanceElement.textContent = "Calculating...";
-  distanceNote.textContent =
-    "Requesting the road route between delivery locations.";
-
-  const routeData = await calculateRoadRoute(route);
-
-  distanceElement.textContent =
-    formatDistance(routeData.distance);
-
-  distanceNote.textContent =
-    routeData.source === "road route"
-      ? "Driving distance along the road route, including the Manolo Fortich sorting hub where applicable."
-      : "Road routing is temporarily unavailable. Showing a straight-line distance estimate, not road distance.";
-
-  message.textContent =
-    "Parcel information loaded successfully.";
-
-  message.style.color = "#b9f3d1";
-
-  showNotification(
-    `Tracking details for ${trackingNumber} are now displayed.`,
-    "success",
-    "Parcel located"
-  );
-
-  updateTimeline(parcel);
-  updateMap(parcel, routeData);
-  renderParcelList();
-  loadDestinationWeather(destination);
+async function calculateRoute(route) {
+    try {
+        return await calculateRoadRoute(route);
+    } catch (error) {
+        console.warn(error);
+        return fallbackRoute(route);
+    }
 }
 
+function displayRouteMetrics(result, status) {
+    document.getElementById("route-distance").textContent =
+        `${result.distance.toFixed(1)} km`;
 
-/* ==========================================
-   11. SEARCH PARCEL
-========================================== */
+    document.getElementById("route-distance-note").textContent =
+        result.estimated
+            ? "Approximate road-distance estimate"
+            : "Calculated using road routing";
 
-document
-  .getElementById("track-form")
-  .addEventListener("submit", function(event) {
-    event.preventDefault();
-
-    const query = document
-      .getElementById("tracking-number")
-      .value
-      .trim();
-
-    const normalized = query.toUpperCase();
-
-    if (parcels[normalized]) {
-      displayParcel(normalized);
-      return;
+    if (status === "Delivered") {
+        document.getElementById("route-eta").textContent = "Delivered";
+        document.getElementById("route-eta-note").textContent =
+            "Parcel marked as delivered";
+        return;
     }
 
-    const match = Object.entries(parcels).find(
-      ([trackingId, parcel]) => {
-        const origin = locations[parcel.origin]?.name || "";
-        const destination = locations[parcel.destination]?.name || "";
+    const duration = formatDuration(result.duration);
+    const arrival = new Date(Date.now() + result.duration * 1000);
 
-        return trackingId.toUpperCase().includes(normalized) ||
-          origin.toLowerCase().includes(query.toLowerCase()) ||
-          destination.toLowerCase().includes(query.toLowerCase());
-      }
-    );
+    document.getElementById("route-eta").textContent =
+        arrival.toLocaleString("en-PH", {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+        });
 
-    if (match) {
-      document.getElementById("tracking-number").value = match[0];
-      displayParcel(match[0]);
-    } else {
-      const feedback = document.getElementById("form-message");
-
-      feedback.textContent =
-        "No parcel found for that tracking ID or destination.";
-
-      feedback.style.color = "#ffb7b7";
-
-      showNotification(
-        "No parcel matched your tracking ID or destination search.",
-        "error",
-        "Search returned no results"
-      );
-    }
-  });
-
-
-/* ==========================================
-   12. ADD NEW PARCEL
-========================================== */
-
-const addParcelForm = document.getElementById("add-parcel-form");
-
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+    document.getElementById("route-eta-note").textContent =
+        `Approx. ${duration} • ${result.estimated ? "Fallback estimate" : "Driving time estimate"}`;
 }
 
-async function geocodeMindanaoPlace(query) {
-  const params = new URLSearchParams({
-    format: "jsonv2",
-    q: query.trim(),
-    limit: "5",
-    countrycodes: "ph",
-    viewbox: "121.8,10.1,127.9,4.4",
-    bounded: "1",
-    addressdetails: "1"
-  });
+/* TIMELINE */
 
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/search?${params}`
-  );
+function updateTimeline(route, status) {
+    const container = document.getElementById("route-track");
+    container.replaceChildren();
 
-  if (!response.ok) {
-    throw new Error(
-      "Place search is unavailable. Please try again."
-    );
-  }
-
-  const results = await response.json();
-
-  if (!results.length) {
-    throw new Error(
-      `Could not find "${query}" in Mindanao. Include its barangay, municipality, or province.`
-    );
-  }
-
-  const match = results[0];
-
-  return {
-    name: match.display_name.split(",").slice(0, 3).join(","),
-    lat: Number(match.lat),
-    lng: Number(match.lon),
-    weatherCard: null
-  };
-}
-
-function newCustomLocationKey() {
-  return `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-}
-
-addParcelForm.addEventListener("submit", async function(event) {
-  event.preventDefault();
-
-  const trackingNumber = document
-    .getElementById("new-tracking-number")
-    .value
-    .trim()
-    .toUpperCase();
-
-  const originQuery = document
-    .getElementById("parcel-origin")
-    .value
-    .trim();
-
-  const destinationQuery = document
-    .getElementById("parcel-destination")
-    .value
-    .trim();
-
-  const message = document.getElementById("add-parcel-message");
-
-  const submitButton = addParcelForm.querySelector(
-    'button[type="submit"]'
-  );
-
-  if (!trackingNumber || !originQuery || !destinationQuery) {
-    message.textContent =
-      "Please complete all parcel information.";
-
-    showNotification(
-      "Fill in the tracking ID, origin, and destination.",
-      "warning",
-      "Missing parcel details"
-    );
-
-    return;
-  }
-
-  if (!/^[A-Z0-9-]{5,30}$/.test(trackingNumber)) {
-    message.textContent =
-      "Use 5–30 characters: letters, numbers, or hyphens.";
-
-    showNotification(
-      "Tracking IDs must contain 5–30 letters, numbers, or hyphens.",
-      "warning",
-      "Invalid tracking ID"
-    );
-
-    return;
-  }
-
-  if (parcels[trackingNumber]) {
-    message.textContent =
-      "That tracking number already exists.";
-
-    showNotification(
-      "A parcel with this tracking ID is already registered.",
-      "error",
-      "Duplicate tracking ID"
-    );
-
-    return;
-  }
-
-  if (originQuery.toLowerCase() === destinationQuery.toLowerCase()) {
-    message.textContent =
-      "Origin and destination must be different.";
-
-    showNotification(
-      "Choose two different places for the parcel route.",
-      "warning",
-      "Invalid route"
-    );
-
-    return;
-  }
-
-  submitButton.disabled = true;
-  submitButton.textContent = "Finding places...";
-
-  message.textContent =
-    "Looking up both locations in Mindanao...";
-
-  showNotification(
-    "Finding the origin and destination on the Mindanao map. This may take a moment.",
-    "info",
-    "Looking up locations"
-  );
-
-  let originKey;
-  let destinationKey;
-
-  try {
-    const originPlace = await geocodeMindanaoPlace(originQuery);
-
-    await delay(1100);
-
-    const destinationPlace =
-      await geocodeMindanaoPlace(destinationQuery);
-
-    originKey = newCustomLocationKey();
-    destinationKey = newCustomLocationKey();
-
-    locations[originKey] = originPlace;
-    locations[destinationKey] = destinationPlace;
-
-    saveCustomLocations();
-
-    parcels[trackingNumber] = {
-      status: "In Transit",
-      origin: originKey,
-      destination: destinationKey
-    };
-
-    if (!saveParcels()) {
-      delete parcels[trackingNumber];
-      delete locations[originKey];
-      delete locations[destinationKey];
-
-      saveCustomLocations();
-
-      throw new Error(
-        "Could not save parcel data in this browser."
-      );
+    if (!route.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty-state";
+        empty.textContent = "No route available.";
+        container.appendChild(empty);
+        return;
     }
 
-    message.textContent =
-      "Parcel added and locations saved!";
+    const normalized = normalizeStatus(status);
 
-    showNotification(
-      `${trackingNumber} was added successfully and its route is ready to view.`,
-      "success",
-      "Parcel added"
-    );
+    let completed = 1;
 
-    addParcelForm.reset();
-    renderParcelList();
-    displayParcel(trackingNumber);
+    if (normalized === "In Transit") completed = Math.min(2, route.length);
+    if (normalized === "Delivered") completed = route.length;
 
-    document.getElementById("dashboard").scrollIntoView({
-      behavior: "smooth"
+    const labels = route.map((point, index) => {
+        if (index === 0) return "Parcel Picked Up";
+        if (index === route.length - 1) return "Destination";
+        return "Sorting Hub";
     });
 
-  } catch (error) {
-    message.textContent =
-      error.message || "Could not locate one of those places.";
+    route.forEach((point, index) => {
+        const step = document.createElement("div");
+        step.className = "timeline-step";
 
-    showNotification(
-      error.message ||
-      "Could not locate one of those places. Check the place names and try again.",
-      "error",
-      "Could not add parcel"
-    );
+        if (index < completed) step.classList.add("completed");
 
-  } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = "＋ Add Parcel";
-  }
-});
+        const dot = document.createElement("div");
+        dot.className = "timeline-dot";
 
+        const name = document.createElement("strong");
+        name.textContent = labels[index];
 
-/* ==========================================
-   13. DASHBOARD AND PARCEL LIST
-========================================== */
+        const place = document.createElement("small");
+        place.textContent = point.name;
 
-function updateDashboardStats() {
-  const all = Object.values(parcels);
+        const statusText = document.createElement("small");
+        statusText.textContent = index < completed
+            ? "Completed"
+            : "Pending";
 
-  document.getElementById("total-parcels").textContent =
-    all.length;
-
-  document.getElementById("transit-parcels").textContent =
-    all.filter(p => p.status === "In Transit").length;
-
-  document.getElementById("delivered-parcels").textContent =
-    all.filter(p => p.status === "Delivered").length;
-
-  document.getElementById("pending-parcels").textContent =
-    all.filter(p => p.status === "Pending").length;
-}
-
-function updateDashboardClock() {
-  const now = new Date();
-
-  document.getElementById("current-date").textContent =
-    now.toLocaleDateString("en-PH", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    });
-
-  document.getElementById("current-time").textContent =
-    now.toLocaleTimeString("en-PH", {
-      hour: "2-digit",
-      minute: "2-digit"
+        step.append(dot, name, place, statusText);
+        container.appendChild(step);
     });
 }
 
-updateDashboardClock();
-setInterval(updateDashboardClock, 60000);
+/* SELECT PARCEL */
+
+async function displayParcel(parcel) {
+    if (!parcel) return;
+
+    const request = ++displayRequest;
+    selectedParcel = parcel;
+
+    document.getElementById("tracking-code").textContent = parcel.tracking;
+    document.getElementById("shipment-status").textContent = parcel.status;
+    document.getElementById("origin-location").textContent = parcel.origin;
+    document.getElementById("destination-location").textContent = parcel.destination;
+
+    const route = createParcelRoute(parcel);
+
+    document.getElementById("next-location").textContent =
+        route.length > 1 ? route[1].name : parcel.destination;
+
+    updateTimeline(route, parcel.status);
+    updateMap(route);
+
+    document.getElementById("route-distance").textContent = "Calculating...";
+    document.getElementById("route-eta").textContent = "Calculating...";
+
+    if (!route.length) {
+        document.getElementById("route-distance").textContent = "Unavailable";
+        document.getElementById("route-eta").textContent = "Unavailable";
+        return;
+    }
+
+    const result = await calculateRoute(route);
+
+    if (request !== displayRequest) return;
+
+    displayRouteMetrics(result, parcel.status);
+
+    if (result.coordinates) {
+        updateMap(route, result.coordinates);
+    }
+
+    await updateSelectedWeather();
+}
+
+/* SEARCH */
+
+function initializeTrackingSearch() {
+    document.getElementById("track-form").addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const query = document.getElementById("tracking-number").value
+            .trim().toLowerCase();
+
+        const parcel = parcels.find(item =>
+            item.tracking.toLowerCase() === query ||
+            item.origin.toLowerCase().includes(query) ||
+            item.destination.toLowerCase().includes(query)
+        );
+
+        const message = document.getElementById("form-message");
+
+        if (!parcel) {
+            message.textContent = "No matching parcel found.";
+            message.className = "form-message error";
+            showNotification("No parcel matches your search.", "error");
+            return;
+        }
+
+        message.textContent = `Parcel ${parcel.tracking} found.`;
+        message.className = "form-message success";
+
+        await displayParcel(parcel);
+    });
+}
+
+/* ADD PARCEL */
+
+function initializeAddParcel() {
+    const form = document.getElementById("add-parcel-form");
+    const button = document.getElementById("add-parcel-button");
+    const message = document.getElementById("add-parcel-message");
+
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const tracking = document.getElementById("new-tracking-number")
+            .value.trim().toUpperCase();
+
+        const originName = document.getElementById("parcel-origin")
+            .value.trim();
+
+        const destinationName = document.getElementById("parcel-destination")
+            .value.trim();
+
+        const status = normalizeStatus(
+            document.getElementById("parcel-status").value
+        );
+
+        if (!tracking || !originName || !destinationName) return;
+
+        if (parcels.some(parcel => parcel.tracking === tracking)) {
+            message.textContent = "Tracking number already exists.";
+            message.className = "form-message error";
+            return;
+        }
+
+        if (originName.toLowerCase() === destinationName.toLowerCase()) {
+            message.textContent = "Origin and destination must be different.";
+            message.className = "form-message error";
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Finding locations...";
+
+        try {
+            const [origin, destination] = await Promise.all([
+                resolveLocation(originName),
+                resolveLocation(destinationName)
+            ]);
+
+            if (origin.lat === destination.lat && origin.lng === destination.lng) {
+                throw new Error("Origin and destination cannot be the same.");
+            }
+
+            const parcel = {
+                tracking,
+                origin: originName,
+                destination: destinationName,
+                status,
+                sample: false,
+                createdAt: new Date().toISOString()
+            };
+
+            parcels.push(parcel);
+            saveParcels();
+            renderParcelList();
+            updateStats();
+
+            form.reset();
+            message.textContent = "Parcel successfully registered.";
+            message.className = "form-message success";
+
+            showNotification(
+                `Parcel ${tracking} has been registered.`,
+                "success",
+                "Parcel Added"
+            );
+
+            await displayParcel(parcel);
+
+        } catch (error) {
+            message.textContent = error.message || "Unable to add parcel.";
+            message.className = "form-message error";
+
+            showNotification(
+                error.message || "Unable to register parcel.",
+                "error"
+            );
+        } finally {
+            button.disabled = false;
+            button.textContent = "+ Register Parcel";
+        }
+    });
+}
+
+/* PARCEL TABLE */
 
 function renderParcelList() {
-  updateDashboardStats();
+    const container = document.getElementById("parcel-list");
+    container.replaceChildren();
 
-  const container = document.getElementById("parcel-list");
-  container.replaceChildren();
+    if (!parcels.length) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
 
-  const entries = Object.entries(parcels);
+        cell.colSpan = 5;
+        cell.textContent = "No parcels registered.";
+        row.appendChild(cell);
+        container.appendChild(row);
+        return;
+    }
 
-  if (entries.length === 0) {
-    const empty = document.createElement("p");
-    empty.textContent = "No parcels have been registered.";
-    container.appendChild(empty);
-    return;
-  }
+    parcels.forEach(parcel => {
+        const row = document.createElement("tr");
 
-  entries.forEach(([trackingNumber, parcel]) => {
-    const origin = locations[parcel.origin];
-    const destination = locations[parcel.destination];
+        const values = [
+            parcel.tracking,
+            parcel.origin,
+            parcel.destination
+        ];
 
-    if (!origin || !destination) return;
+        values.forEach(value => {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
+        });
 
-    const card = document.createElement("article");
-    card.className = "parcel-item";
+        const statusCell = document.createElement("td");
+        const badge = document.createElement("span");
 
-    const details = document.createElement("div");
+        badge.className = "status-pill " +
+            (parcel.status === "Delivered"
+                ? "status-delivered"
+                : parcel.status === "In Transit"
+                    ? "status-transit"
+                    : "status-pending");
 
-    const title = document.createElement("h4");
-    title.textContent = trackingNumber;
+        badge.textContent = parcel.status;
+        statusCell.appendChild(badge);
+        row.appendChild(statusCell);
 
-    const routeText = document.createElement("p");
-    routeText.textContent =
-      `${origin.name} → ${destination.name}`;
+        const actionCell = document.createElement("td");
+        const actions = document.createElement("div");
+        actions.className = "table-action";
 
-    details.append(title, routeText);
+        const view = document.createElement("button");
+        view.className = "view-btn";
+        view.textContent = "View";
+        view.type = "button";
+        view.addEventListener("click", async () => {
+            await displayParcel(parcel);
+            document.getElementById("dashboard").scrollIntoView({
+                behavior: "smooth"
+            });
+        });
 
-    const actions = document.createElement("div");
-    actions.className = "parcel-item-actions";
+        const remove = document.createElement("button");
+        remove.className = "delete-btn";
+        remove.textContent = "Delete";
+        remove.type = "button";
+        remove.addEventListener("click", () => deleteParcel(parcel.tracking));
 
-    const viewButton = document.createElement("button");
-    viewButton.type = "button";
-    viewButton.textContent = "View Route";
+        actions.append(view, remove);
+        actionCell.appendChild(actions);
+        row.appendChild(actionCell);
 
-    viewButton.addEventListener("click", () => {
-      displayParcel(trackingNumber);
+        container.appendChild(row);
+    });
+}
 
-      document.getElementById("dashboard").scrollIntoView({
-        behavior: "smooth"
-      });
+/* DELETE */
+
+function deleteParcel(tracking) {
+    if (!confirm(`Delete parcel ${tracking}?`)) return;
+
+    parcels = parcels.filter(parcel => parcel.tracking !== tracking);
+    saveParcels();
+    renderParcelList();
+    updateStats();
+
+    if (selectedParcel?.tracking === tracking) {
+        selectedParcel = null;
+        displayRequest++;
+
+        document.getElementById("tracking-code").textContent = "Select a parcel";
+        document.getElementById("shipment-status").textContent = "---";
+        document.getElementById("origin-location").textContent = "---";
+        document.getElementById("next-location").textContent = "---";
+        document.getElementById("destination-location").textContent = "---";
+        document.getElementById("route-distance").textContent = "---";
+        document.getElementById("route-eta").textContent = "---";
+        document.getElementById("route-track").innerHTML =
+            '<p class="empty-state">Select a parcel to view its delivery timeline.</p>';
+
+        markerLayer.clearLayers();
+        routeLayer.clearLayers();
+        resetWeatherDisplays();
+    }
+
+    showNotification(`Parcel ${tracking} deleted.`, "success");
+}
+
+/* STATISTICS */
+
+function updateStats() {
+    document.getElementById("total-parcels").textContent = parcels.length;
+
+    document.getElementById("transit-parcels").textContent =
+        parcels.filter(p => p.status === "In Transit").length;
+
+    document.getElementById("delivered-parcels").textContent =
+        parcels.filter(p => p.status === "Delivered").length;
+
+    document.getElementById("pending-parcels").textContent =
+        parcels.filter(p => p.status === "Pending").length;
+}
+
+/* WEATHER */
+
+function weatherEmoji(icon = "") {
+    if (icon.startsWith("01")) return "☀️";
+    if (icon.startsWith("02")) return "🌤️";
+    if (icon.startsWith("03") || icon.startsWith("04")) return "☁️";
+    if (icon.startsWith("09") || icon.startsWith("10")) return "🌧️";
+    if (icon.startsWith("11")) return "⛈️";
+    return "🌥️";
+}
+
+async function getWeather(lat, lng) {
+    const key = getApiKey();
+    if (!key) return null;
+
+    const cacheKey = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+    const cached = weatherCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.time < WEATHER_CACHE_TIME) {
+        return cached.data;
+    }
+
+    const params = new URLSearchParams({
+        lat,
+        lon: lng,
+        appid: key,
+        units: "metric"
     });
 
-    actions.appendChild(viewButton);
-
-    if (!Object.hasOwn(sampleParcels, trackingNumber)) {
-      const deleteButton = document.createElement("button");
-
-      deleteButton.type = "button";
-      deleteButton.textContent = "Delete";
-      deleteButton.className = "delete-parcel";
-
-      deleteButton.addEventListener("click", () => {
-        deleteParcel(trackingNumber);
-      });
-
-      actions.appendChild(deleteButton);
-    }
-
-    card.append(details, actions);
-    container.appendChild(card);
-  });
-}
-
-
-/* ==========================================
-   14. DELETE PARCEL
-========================================== */
-
-function deleteParcel(trackingNumber) {
-  const confirmed = confirm(
-    `Are you sure you want to delete parcel ${trackingNumber}?`
-  );
-
-  if (!confirmed) return;
-
-  delete parcels[trackingNumber];
-
-  if (!saveParcels()) {
-    showNotification(
-      "The parcel could not be deleted because the browser could not save the changes.",
-      "error",
-      "Delete failed"
+    const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?${params}`
     );
 
-    return;
-  }
-
-  renderParcelList();
-
-  showNotification(
-    `Parcel ${trackingNumber} has been deleted.`,
-    "success",
-    "Parcel deleted"
-  );
-
-  if (selectedTrackingNumber === trackingNumber) {
-    const firstRemaining = Object.keys(parcels)[0];
-
-    if (firstRemaining) {
-      displayParcel(firstRemaining);
-    } else {
-      selectedTrackingNumber = null;
-
-      document.getElementById("tracking-code").textContent =
-        "No parcel selected";
-
-      document.getElementById("shipment-status").textContent =
-        "No shipment";
-
-      document.getElementById("origin-location").textContent = "—";
-      document.getElementById("destination-location").textContent = "—";
-      document.getElementById("next-location").textContent = "—";
-      document.getElementById("route-distance").textContent = "—";
-
-      document.getElementById("route-distance-note").textContent =
-        "Select a parcel to calculate its route distance.";
-
-      document.getElementById("route-track").replaceChildren();
-      markerLayer.clearLayers();
-
-      if (routeLine) {
-        map.removeLayer(routeLine);
-        routeLine = null;
-      }
-
-      map.setView([7.9, 125.0], 7);
-    }
-  }
-}
-
-
-/* ==========================================
-   15. OPENWEATHER API
-========================================== */
-
-async function getWeather(locationKey) {
-  const place = locations[locationKey];
-
-  if (!place || !place.weatherCard) return;
-
-  const card = document.getElementById(place.weatherCard);
-  const apiKey = getApiKey();
-
-  if (!apiKey) {
-    card.innerHTML = `
-      <h3>${place.name}</h3>
-      <p class="weather-loading">
-        Add your API key in Settings to load weather.
-      </p>
-    `;
-
-    return;
-  }
-
-  card.innerHTML = `
-    <h3>${place.name}</h3>
-    <p class="weather-loading">Loading weather...</p>
-  `;
-
-  const url =
-    "https://api.openweathermap.org/data/2.5/weather" +
-    `?lat=${place.lat}` +
-    `&lon=${place.lng}` +
-    `&appid=${encodeURIComponent(apiKey)}` +
-    "&units=metric";
-
-  try {
-    const response = await fetch(url);
-
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error("Invalid or inactive API key.");
-      }
-
-      if (response.status === 429) {
-        throw new Error("Weather API request limit reached.");
-      }
-
-      throw new Error(
-        `Weather service error (${response.status}).`
-      );
+        if (response.status === 401) throw new Error("Invalid OpenWeather API key.");
+        throw new Error("Weather service unavailable.");
     }
 
     const data = await response.json();
 
-    const temperature = Math.round(data.main.temp);
-    const feelsLike = Math.round(data.main.feels_like);
-    const humidity = data.main.humidity;
-    const wind = data.wind.speed;
-    const description = data.weather[0].description;
-    const icon = data.weather[0].icon;
+    weatherCache.set(cacheKey, {
+        time: Date.now(),
+        data
+    });
 
-    card.innerHTML = `
-      <h3>${place.name}</h3>
-
-      <img
-        class="weather-icon"
-        src="https://openweathermap.org/img/wn/${icon}@2x.png"
-        alt="${description}"
-      >
-
-      <div class="temperature">${temperature}°C</div>
-
-      <p class="description">${description}</p>
-
-      <div class="weather-extra">
-        <div>Feels like: ${feelsLike}°C</div>
-        <div>Humidity: ${humidity}%</div>
-        <div>Wind speed: ${wind} m/s</div>
-      </div>
-    `;
-
-  } catch (error) {
-    console.error(`Weather error for ${place.name}:`, error);
-
-    showNotification(
-      `${place.name}: ${error.message}`,
-      "error",
-      "Weather update failed"
-    );
-
-    card.innerHTML = `
-      <h3>${place.name}</h3>
-      <p class="weather-error">${error.message}</p>
-    `;
-  }
+    return data;
 }
 
+function resetWeatherDisplays() {
+    document.getElementById("destination-temperature").textContent = "--°C";
+    document.getElementById("destination-description").textContent = "Weather unavailable";
+    document.getElementById("destination-humidity").textContent = "--%";
+    document.getElementById("destination-wind").textContent = "-- m/s";
+    document.getElementById("destination-rain").textContent = "-- mm";
 
-/* ==========================================
-   15A. WEATHER STATUS FOR EACH MAP PIN
-========================================== */
+    document.querySelector(".weather-big-icon").textContent = "🌤️";
 
-async function loadPinWeather(locationKey) {
-  const place = locations[locationKey];
-
-  if (!place) return;
-
-  const targetId = `pin-weather-${locationKey}`;
-  const target = document.getElementById(targetId);
-
-  if (!target) return;
-
-  const apiKey = getApiKey();
-
-  if (!apiKey) {
-    target.innerHTML =
-      "<strong>Weather:</strong> Add your OpenWeatherMap API key in Settings.";
-
-    return;
-  }
-
-  target.innerHTML =
-    "<strong>Weather:</strong> Loading current conditions...";
-
-  try {
-    const url =
-      "https://api.openweathermap.org/data/2.5/weather" +
-      `?lat=${place.lat}&lon=${place.lng}` +
-      `&appid=${encodeURIComponent(apiKey)}&units=metric`;
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error("Invalid API key");
-      }
-
-      throw new Error(
-        `Weather unavailable (${response.status})`
-      );
-    }
-
-    const data = await response.json();
-
-    const condition = data.weather && data.weather[0]
-      ? data.weather[0].description
-      : "Conditions unavailable";
-
-    const temperature = Math.round(data.main.temp);
-    const humidity = data.main.humidity;
-
-    const currentTarget = document.getElementById(targetId);
-
-    if (currentTarget) {
-      currentTarget.innerHTML =
-        `<strong>Weather:</strong> ${temperature}°C, ${condition}` +
-        `<br>Humidity: ${humidity}%`;
-    }
-
-  } catch (error) {
-    const currentTarget = document.getElementById(targetId);
-
-    if (currentTarget) {
-      currentTarget.innerHTML =
-        `<strong>Weather:</strong> ${error.message}`;
-    }
-  }
+    [
+        "weather-davao",
+        "weather-manolo",
+        "weather-cdo",
+        "weather-iligan"
+    ].forEach(id => {
+        const element = document.getElementById(id);
+        element.innerHTML = `<h3>${element.querySelector("h3")?.textContent || "Weather"}</h3><p>Weather unavailable. Add an API key.</p>`;
+    });
 }
 
-
-async function loadDestinationWeather(place) {
-  const apiKey = getApiKey();
-
-  const temp = document.getElementById("destination-temperature");
-  const description = document.getElementById("destination-description");
-
-  if (!apiKey) {
-    temp.textContent = "--°C";
-    description.textContent =
-      "Add an OpenWeather key in Settings";
-
-    return;
-  }
-
-  try {
-    const url =
-      `https://api.openweathermap.org/data/2.5/weather?lat=${place.lat}&lon=${place.lng}&appid=${encodeURIComponent(apiKey)}&units=metric`;
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error("Weather unavailable");
+function displayDestinationWeather(data) {
+    if (!data) {
+        resetWeatherDisplays();
+        return;
     }
 
-    const data = await response.json();
+    document.getElementById("destination-temperature").textContent =
+        `${Math.round(data.main.temp)}°C`;
 
-    temp.textContent =
-      `${Math.round(data.main.temp)}°C`;
-
-    description.textContent =
-      `${place.name} · ${data.weather[0].description}`;
+    document.getElementById("destination-description").textContent =
+        data.weather?.[0]?.description || "Unknown conditions";
 
     document.getElementById("destination-humidity").textContent =
-      `${data.main.humidity}%`;
+        `${data.main.humidity}%`;
 
     document.getElementById("destination-wind").textContent =
-      `${Math.round(data.wind.speed * 3.6)} km/h`;
+        `${data.wind?.speed ?? 0} m/s`;
 
     document.getElementById("destination-rain").textContent =
-      `${data.clouds?.all ?? "--"}% cloud cover`;
+        `${data.rain?.["1h"] ?? data.rain?.["3h"] ?? 0} mm`;
 
-    document.getElementById("top-temperature").textContent =
-      `${Math.round(data.main.temp)}°C`;
-
-    document.getElementById("top-condition").textContent =
-      data.weather[0].description;
-
-  } catch (error) {
-    description.textContent =
-      "Could not load destination weather";
-
-    showNotification(
-      `Could not load weather for ${place.name}. Check your API key or connection.`,
-      "error",
-      "Destination weather unavailable"
-    );
-  }
+    document.querySelector(".weather-big-icon").textContent =
+        weatherEmoji(data.weather?.[0]?.icon);
 }
 
+async function updateSelectedWeather() {
+    if (!selectedParcel) return;
 
-/* ==========================================
-   16. LOAD ALL WEATHER CARDS
-========================================== */
+    const destination = findLocation(selectedParcel.destination);
+    if (!destination) return;
+
+    try {
+        const data = await getWeather(destination.lat, destination.lng);
+        displayDestinationWeather(data);
+    } catch (error) {
+        console.error(error);
+        resetWeatherDisplays();
+    }
+}
+
+const weatherLocations = [
+    { id: "weather-davao", name: "Davao City", lat: 7.1907, lng: 125.4553 },
+    { id: "weather-manolo", name: "Manolo Fortich", lat: 8.3695, lng: 124.8658 },
+    { id: "weather-cdo", name: "Cagayan de Oro", lat: 8.4542, lng: 124.6319 },
+    { id: "weather-iligan", name: "Iligan City", lat: 8.2280, lng: 124.2452 }
+];
+
+function renderWeatherCard(location, data) {
+    const card = document.getElementById(location.id);
+    card.replaceChildren();
+
+    const title = document.createElement("h3");
+    title.textContent = location.name;
+
+    const temperature = document.createElement("p");
+    temperature.className = "weather-temp";
+    temperature.textContent = `${Math.round(data.main.temp)}°C`;
+
+    const description = document.createElement("p");
+    description.textContent =
+        `${weatherEmoji(data.weather?.[0]?.icon)} ${data.weather?.[0]?.description || "Unknown"}`;
+
+    const humidity = document.createElement("p");
+    humidity.textContent = `Humidity: ${data.main.humidity}%`;
+
+    const wind = document.createElement("p");
+    wind.textContent = `Wind: ${data.wind?.speed ?? 0} m/s`;
+
+    card.append(title, temperature, description, humidity, wind);
+}
 
 async function loadAllWeather() {
-  const updatedLabel = document.getElementById("weather-updated");
+    if (!getApiKey()) {
+        resetWeatherDisplays();
+        document.getElementById("weather-updated").textContent =
+            "Add your OpenWeather API key to activate monitoring.";
 
-  updatedLabel.textContent =
-    "Updating weather information...";
+        document.getElementById("top-weather-description").textContent =
+            "Weather unavailable";
 
-  const weatherLocations = [
-    "davao",
-    "manolo",
-    "cdo",
-    "iligan"
-  ];
+        return;
+    }
 
-  await Promise.all(
-    weatherLocations.map(key => getWeather(key))
-  );
-
-  updatedLabel.textContent =
-    "Last checked: " + new Date().toLocaleString();
-
-  if (getApiKey()) {
-    showNotification(
-      "Weather information has been refreshed for the monitored locations.",
-      "success",
-      "Weather updated"
+    const results = await Promise.allSettled(
+        weatherLocations.map(async location => ({
+            location,
+            data: await getWeather(location.lat, location.lng)
+        }))
     );
-  }
+
+    let firstWeather = null;
+
+    results.forEach(result => {
+        if (result.status === "fulfilled" && result.value.data) {
+            renderWeatherCard(result.value.location, result.value.data);
+
+            if (!firstWeather) firstWeather = result.value.data;
+        }
+    });
+
+    if (firstWeather) {
+        document.getElementById("top-temperature").textContent =
+            `${Math.round(firstWeather.main.temp)}°C`;
+
+        document.getElementById("top-weather-description").textContent =
+            firstWeather.weather?.[0]?.description || "Current conditions";
+    }
+
+    document.getElementById("weather-updated").textContent =
+        `Last updated: ${new Date().toLocaleString()}`;
 }
 
-document
-  .getElementById("refresh-weather")
-  .addEventListener("click", loadAllWeather);
+/* CLOCK AND NAVIGATION */
 
+function updateClock() {
+    const now = new Date();
 
-/* ==========================================
-   17. INITIALIZE WEBSITE
-========================================== */
+    document.getElementById("current-date").textContent =
+        now.toLocaleDateString("en-PH", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+        });
 
-renderParcelList();
-
-const firstParcel = Object.keys(parcels)[0];
-
-if (firstParcel) {
-  displayParcel(firstParcel);
+    document.getElementById("current-time").textContent =
+        now.toLocaleTimeString("en-PH", {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
 }
 
-loadAllWeather();
+function initializeNavigation() {
+    const sidebar = document.getElementById("sidebar");
+
+    document.getElementById("menu-toggle").addEventListener("click", () => {
+        sidebar.classList.toggle("open");
+    });
+
+    document.querySelectorAll(".nav-link").forEach(link => {
+        link.addEventListener("click", () => {
+            document.querySelectorAll(".nav-link").forEach(item =>
+                item.classList.remove("active")
+            );
+
+            link.classList.add("active");
+            sidebar.classList.remove("open");
+        });
+    });
+
+    document.getElementById("refresh-parcels").addEventListener("click", () => {
+        renderParcelList();
+        updateStats();
+        showNotification("Parcel records refreshed.", "success");
+    });
+
+    document.getElementById("refresh-weather").addEventListener("click", async () => {
+        weatherCache.clear();
+        await loadAllWeather();
+        await updateSelectedWeather();
+        showNotification("Weather information refreshed.", "success");
+    });
+}
+
+/* INITIALIZE */
+
+function initializeWebsite() {
+    loadParcels();
+
+    initializeMap();
+    initializeApiSettings();
+    initializeTrackingSearch();
+    initializeAddParcel();
+    initializeNavigation();
+
+    renderParcelList();
+    updateStats();
+    updateClock();
+
+    setInterval(updateClock, 60000);
+
+    if (parcels.length) {
+        displayParcel(parcels[0]);
+    }
+
+    loadAllWeather();
+
+    showNotification(
+        "Mindanao Parcel Tracker is ready.",
+        "success",
+        "System Online"
+    );
+}
+
+document.addEventListener("DOMContentLoaded", initializeWebsite);
