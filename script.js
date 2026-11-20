@@ -1,16 +1,14 @@
 
-/* ==========================================
-   PARCELTRACK MINDANAO
-   Parcel Management + Leaflet + OpenWeather
-========================================== */
+// ==========================================
+// PARCELTRACK MINDANAO
+// Parcel Management + Leaflet + OpenWeather
+// ==========================================
 
-
-/* ==========================================
-   1. CONFIGURATION AND STORAGE
-========================================== */
+// 1. CONFIGURATION AND STORAGE
 
 const PARCEL_STORAGE_KEY = "parceltrack_mindanao_parcels";
 const API_STORAGE_KEY = "parceltrack_openweather_key";
+const CUSTOM_LOCATIONS_STORAGE_KEY = "parceltrack_custom_locations";
 
 const locations = {
   davao: {
@@ -51,25 +49,21 @@ const locations = {
   }
 };
 
-const CUSTOM_LOCATIONS_STORAGE_KEY = "parceltrack_custom_locations";
+// Restore custom places saved in the browser.
+try {
+  const savedCustomLocations = JSON.parse(
+    localStorage.getItem(CUSTOM_LOCATIONS_STORAGE_KEY) || "{}"
+  );
 
-function loadCustomLocations() {
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem(CUSTOM_LOCATIONS_STORAGE_KEY) || "{}"
-    );
-
-    return saved && typeof saved === "object" && !Array.isArray(saved)
-      ? saved
-      : {};
-  } catch (error) {
-    console.warn("Could not load saved custom locations:", error);
-    return {};
+  if (
+    savedCustomLocations &&
+    typeof savedCustomLocations === "object"
+  ) {
+    Object.assign(locations, savedCustomLocations);
   }
+} catch (error) {
+  console.warn("Could not restore custom places:", error);
 }
-
-// Restore geocoded locations so saved parcels still work after refreshing.
-Object.assign(locations, loadCustomLocations());
 
 function saveCustomLocations() {
   const custom = Object.fromEntries(
@@ -85,9 +79,7 @@ function saveCustomLocations() {
 }
 
 
-/* ==========================================
-   2. SAMPLE PARCELS
-========================================== */
+// 2. SAMPLE PARCELS
 
 const sampleParcels = {
   MND123456789: {
@@ -111,9 +103,7 @@ let parcels = loadParcels();
 let selectedTrackingNumber = null;
 
 
-/* ==========================================
-   3. LOAD AND SAVE PARCELS
-========================================== */
+// 3. LOAD AND SAVE PARCELS
 
 function loadParcels() {
   try {
@@ -143,7 +133,6 @@ function saveParcels() {
       PARCEL_STORAGE_KEY,
       JSON.stringify(parcels)
     );
-
     return true;
   } catch (error) {
     console.error("Could not save parcel records:", error);
@@ -152,9 +141,7 @@ function saveParcels() {
 }
 
 
-/* ==========================================
-   4. API KEY SETTINGS
-========================================== */
+// 4. API KEY SETTINGS
 
 function getApiKey() {
   return localStorage.getItem(API_STORAGE_KEY) || "";
@@ -181,6 +168,12 @@ apiKeyForm.addEventListener("submit", function(event) {
     apiKeyMessage.textContent = "API key saved successfully.";
 
     loadAllWeather();
+
+    if (selectedTrackingNumber && parcels[selectedTrackingNumber]) {
+      loadDestinationWeather(
+        locations[parcels[selectedTrackingNumber].destination]
+      );
+    }
   } catch (error) {
     apiKeyMessage.textContent =
       "Could not save API key in this browser.";
@@ -210,23 +203,58 @@ document
   });
 
 
-/* ==========================================
-   5. LEAFLET MAP
-========================================== */
+// 5. LEAFLET MAP
 
 const map = L.map("map").setView([7.9, 125.0], 7);
 
-L.tileLayer(
+const streetTiles = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
     maxZoom: 19,
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }
+);
+
+const satelliteTiles = L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  {
+    maxZoom: 19,
+    attribution: "Tiles &copy; Esri"
+  }
 ).addTo(map);
 
-const markerLayer = L.layerGroup().addTo(map);
+document
+  .getElementById("street-mode")
+  .addEventListener("click", () => {
+    if (map.hasLayer(satelliteTiles)) {
+      map.removeLayer(satelliteTiles);
+    }
 
+    if (!map.hasLayer(streetTiles)) {
+      streetTiles.addTo(map);
+    }
+
+    document.getElementById("street-mode").classList.add("active");
+    document.getElementById("satellite-mode").classList.remove("active");
+  });
+
+document
+  .getElementById("satellite-mode")
+  .addEventListener("click", () => {
+    if (map.hasLayer(streetTiles)) {
+      map.removeLayer(streetTiles);
+    }
+
+    if (!map.hasLayer(satelliteTiles)) {
+      satelliteTiles.addTo(map);
+    }
+
+    document.getElementById("satellite-mode").classList.add("active");
+    document.getElementById("street-mode").classList.remove("active");
+  });
+
+const markerLayer = L.layerGroup().addTo(map);
 let routeLine = null;
 
 function createMarkerIcon(color) {
@@ -248,9 +276,7 @@ function createMarkerIcon(color) {
 }
 
 
-/* ==========================================
-   6. CREATE PARCEL ROUTE
-========================================== */
+// 6. CREATE PARCEL ROUTE
 
 function createParcelRoute(parcel) {
   const routeKeys = [];
@@ -298,9 +324,7 @@ function createParcelRoute(parcel) {
 }
 
 
-/* ==========================================
-   7. DISPLAY ROUTE ON MAP
-========================================== */
+// 7. DISPLAY ROUTE ON MAP
 
 function updateMap(parcel, routeData) {
   markerLayer.clearLayers();
@@ -378,9 +402,7 @@ function updateMap(parcel, routeData) {
 }
 
 
-/* ==========================================
-   8. UPDATE TIMELINE
-========================================== */
+// 8. UPDATE TIMELINE
 
 function updateTimeline(parcel) {
   const routeTrack = document.getElementById("route-track");
@@ -419,10 +441,8 @@ function updateTimeline(parcel) {
 }
 
 
-/* ==========================================
-   9. AUTOMATIC ROAD ROUTE DISTANCE
-   OSRM returns a driving route distance in meters.
-========================================== */
+// 9. AUTOMATIC ROAD ROUTE DISTANCE
+// OSRM returns a driving route distance in meters.
 
 function formatDistance(meters) {
   if (!Number.isFinite(meters)) return "Unavailable";
@@ -514,13 +534,18 @@ async function calculateRoadRoute(route) {
 }
 
 
-/* ==========================================
-   10. DISPLAY SELECTED PARCEL
-========================================== */
+// 10. DISPLAY SELECTED PARCEL
+
+function setTextIfPresent(id, value) {
+  const element = document.getElementById(id);
+
+  if (element) {
+    element.textContent = value;
+  }
+}
 
 async function displayParcel(trackingNumber) {
   const parcel = parcels[trackingNumber];
-
   const message = document.getElementById("form-message");
 
   if (!parcel) {
@@ -548,20 +573,13 @@ async function displayParcel(trackingNumber) {
     ? locations[route[1].location].name
     : destination.name;
 
-  document.getElementById("tracking-code").textContent =
-    trackingNumber;
+  setTextIfPresent("tracking-code", trackingNumber);
+  setTextIfPresent("shipment-status", parcel.status);
 
-  document.getElementById("shipment-status").textContent =
-    parcel.status;
-
-  document.getElementById("origin-location").textContent =
-    origin.name;
-
-  document.getElementById("destination-location").textContent =
-    destination.name;
-
-  document.getElementById("next-location").textContent =
-    nextLocation;
+  // These optional fields also support the earlier dashboard layout.
+  setTextIfPresent("origin-location", origin.name);
+  setTextIfPresent("destination-location", destination.name);
+  setTextIfPresent("next-location", nextLocation);
 
   const distanceElement =
     document.getElementById("route-distance");
@@ -592,47 +610,71 @@ async function displayParcel(trackingNumber) {
   updateTimeline(parcel);
   updateMap(parcel, routeData);
   renderParcelList();
+  loadDestinationWeather(destination);
 }
 
 
-/* ==========================================
-   11. SEARCH PARCEL
-========================================== */
+// 11. SEARCH PARCEL
 
 document
   .getElementById("track-form")
   .addEventListener("submit", function(event) {
     event.preventDefault();
 
-    const trackingNumber = document
+    const query = document
       .getElementById("tracking-number")
       .value
-      .trim()
-      .toUpperCase();
+      .trim();
 
-    displayParcel(trackingNumber);
+    const normalized = query.toUpperCase();
+
+    // First try an exact tracking ID, then search place names.
+    if (parcels[normalized]) {
+      displayParcel(normalized);
+      return;
+    }
+
+    const match = Object.entries(parcels).find(
+      ([trackingId, parcel]) => {
+        const origin = locations[parcel.origin]?.name || "";
+        const destination = locations[parcel.destination]?.name || "";
+
+        return (
+          trackingId.toUpperCase().includes(normalized) ||
+          origin.toLowerCase().includes(query.toLowerCase()) ||
+          destination.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+    );
+
+    if (match) {
+      document.getElementById("tracking-number").value = match[0];
+      displayParcel(match[0]);
+    } else {
+      const feedback = document.getElementById("form-message");
+
+      feedback.textContent =
+        "No parcel found for that tracking ID or destination.";
+
+      feedback.style.color = "#ffb7b7";
+    }
   });
 
 
-/* ==========================================
-   12. ADD NEW PARCEL
-========================================== */
+// 12. ADD NEW PARCEL
 
 const addParcelForm =
   document.getElementById("add-parcel-form");
 
-// Convert a user-entered place name/address into map coordinates.
-// The search area is bounded to Mindanao to preserve this site's regional focus.
-async function geocodeMindanaoPlace(placeQuery) {
-  const query = placeQuery.trim();
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-  if (!query) {
-    throw new Error("Enter a place name or address.");
-  }
-
+// Search for any place within the Mindanao map boundary.
+async function geocodeMindanaoPlace(query) {
   const params = new URLSearchParams({
     format: "jsonv2",
-    q: query,
+    q: query.trim(),
     limit: "5",
     countrycodes: "ph",
     viewbox: "121.8,10.1,127.9,4.4",
@@ -646,7 +688,7 @@ async function geocodeMindanaoPlace(placeQuery) {
 
   if (!response.ok) {
     throw new Error(
-      "Place search is temporarily unavailable. Please try again."
+      "Place search is unavailable. Please try again."
     );
   }
 
@@ -654,35 +696,27 @@ async function geocodeMindanaoPlace(placeQuery) {
 
   if (!results.length) {
     throw new Error(
-      `Could not find "${query}" in Mindanao. Try adding the barangay, municipality, or province.`
+      `Could not find "${query}" in Mindanao. Include its barangay, municipality, or province.`
     );
   }
 
-  // Choose the closest matching result returned by the geocoder.
-  const result = results[0];
+  const match = results[0];
 
   return {
-    name: result.display_name
+    name: match.display_name
       .split(",")
       .slice(0, 3)
       .join(","),
-    lat: Number(result.lat),
-    lng: Number(result.lon),
+    lat: Number(match.lat),
+    lng: Number(match.lon),
     weatherCard: null
   };
 }
 
-function createCustomLocationKey() {
+function newCustomLocationKey() {
   return `custom_${Date.now()}_${Math.random()
     .toString(36)
-    .slice(2, 8)}`;
-}
-
-// Nominatim's public service asks clients to keep requests to about one per second.
-function wait(milliseconds) {
-  return new Promise(resolve =>
-    setTimeout(resolve, milliseconds)
-  );
+    .slice(2, 7)}`;
 }
 
 addParcelForm.addEventListener("submit", async function(event) {
@@ -738,10 +772,9 @@ addParcelForm.addEventListener("submit", async function(event) {
   }
 
   submitButton.disabled = true;
-  submitButton.textContent = "Finding locations...";
-
+  submitButton.textContent = "Finding places...";
   message.textContent =
-    "Searching for the origin and destination on the map...";
+    "Looking up both locations in Mindanao...";
 
   let originKey;
   let destinationKey;
@@ -750,13 +783,14 @@ addParcelForm.addEventListener("submit", async function(event) {
     const originPlace =
       await geocodeMindanaoPlace(originQuery);
 
-    await wait(1100);
+    // Respect the public geocoder's request interval.
+    await delay(1100);
 
     const destinationPlace =
       await geocodeMindanaoPlace(destinationQuery);
 
-    originKey = createCustomLocationKey();
-    destinationKey = createCustomLocationKey();
+    originKey = newCustomLocationKey();
+    destinationKey = newCustomLocationKey();
 
     locations[originKey] = originPlace;
     locations[destinationKey] = destinationPlace;
@@ -777,41 +811,81 @@ addParcelForm.addEventListener("submit", async function(event) {
       saveCustomLocations();
 
       throw new Error(
-        "Could not save this parcel. Check your browser storage settings."
+        "Could not save parcel data in this browser."
       );
     }
 
+    message.textContent =
+      "Parcel added and locations saved!";
+
+    addParcelForm.reset();
+
+    renderParcelList();
+    displayParcel(trackingNumber);
+
+    document.getElementById("dashboard").scrollIntoView({
+      behavior: "smooth"
+    });
+
   } catch (error) {
     message.textContent =
-      error.message ||
-      "Could not find one of those places. Please check the spelling and try again.";
+      error.message || "Could not locate one of those places.";
 
+  } finally {
     submitButton.disabled = false;
-    submitButton.textContent = "+ Add Parcel";
-    return;
+    submitButton.textContent = "＋ Add Parcel";
   }
-
-  message.textContent = "Parcel added successfully!";
-
-  submitButton.disabled = false;
-  submitButton.textContent = "+ Add Parcel";
-
-  addParcelForm.reset();
-
-  renderParcelList();
-  displayParcel(trackingNumber);
-
-  document.getElementById("tracking").scrollIntoView({
-    behavior: "smooth"
-  });
 });
 
 
-/* ==========================================
-   13. RENDER REGISTERED PARCELS
-========================================== */
+// 13. DASHBOARD STATISTICS
+
+function updateDashboardStats() {
+  const all = Object.values(parcels);
+
+  document.getElementById("total-parcels").textContent =
+    all.length;
+
+  document.getElementById("transit-parcels").textContent =
+    all.filter(p => p.status === "In Transit").length;
+
+  document.getElementById("delivered-parcels").textContent =
+    all.filter(p => p.status === "Delivered").length;
+
+  document.getElementById("pending-parcels").textContent =
+    all.filter(p => p.status === "Pending").length;
+}
+
+
+// 14. DASHBOARD CLOCK
+
+function updateDashboardClock() {
+  const now = new Date();
+
+  document.getElementById("current-date").textContent =
+    now.toLocaleDateString("en-PH", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+
+  document.getElementById("current-time").textContent =
+    now.toLocaleTimeString("en-PH", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+}
+
+updateDashboardClock();
+setInterval(updateDashboardClock, 60000);
+
+
+// 15. RENDER REGISTERED PARCELS
 
 function renderParcelList() {
+  updateDashboardStats();
+
   const container =
     document.getElementById("parcel-list");
 
@@ -844,7 +918,6 @@ function renderParcelList() {
     title.textContent = trackingNumber;
 
     const routeText = document.createElement("p");
-
     routeText.textContent =
       `${origin.name} → ${destination.name}`;
 
@@ -854,14 +927,13 @@ function renderParcelList() {
     actions.className = "parcel-item-actions";
 
     const viewButton = document.createElement("button");
-
     viewButton.type = "button";
     viewButton.textContent = "View Route";
 
     viewButton.addEventListener("click", () => {
       displayParcel(trackingNumber);
 
-      document.getElementById("tracking").scrollIntoView({
+      document.getElementById("dashboard").scrollIntoView({
         behavior: "smooth"
       });
     });
@@ -888,9 +960,7 @@ function renderParcelList() {
 }
 
 
-/* ==========================================
-   14. DELETE PARCEL
-========================================== */
+// 16. DELETE PARCEL
 
 function deleteParcel(trackingNumber) {
   const confirmed = confirm(
@@ -916,23 +986,19 @@ function deleteParcel(trackingNumber) {
     } else {
       selectedTrackingNumber = null;
 
-      document.getElementById("tracking-code").textContent =
-        "No parcel selected";
+      setTextIfPresent("tracking-code", "No parcel selected");
+      setTextIfPresent("shipment-status", "No shipment");
+      setTextIfPresent("origin-location", "—");
+      setTextIfPresent("destination-location", "—");
+      setTextIfPresent("next-location", "—");
+      setTextIfPresent("route-distance", "—");
 
-      document.getElementById("shipment-status").textContent =
-        "No shipment";
-
-      document.getElementById("origin-location").textContent = "—";
-      document.getElementById("destination-location").textContent = "—";
-      document.getElementById("next-location").textContent = "—";
-
-      document.getElementById("route-distance").textContent = "—";
-
-      document.getElementById("route-distance-note").textContent =
-        "Select a parcel to calculate its route distance.";
+      setTextIfPresent(
+        "route-distance-note",
+        "Select a parcel to calculate its route distance."
+      );
 
       document.getElementById("route-track").replaceChildren();
-
       markerLayer.clearLayers();
 
       if (routeLine) {
@@ -946,9 +1012,7 @@ function deleteParcel(trackingNumber) {
 }
 
 
-/* ==========================================
-   15. OPENWEATHER API
-========================================== */
+// 17. OPENWEATHER API - WEATHER CARDS
 
 async function getWeather(locationKey) {
   const place = locations[locationKey];
@@ -1008,17 +1072,13 @@ async function getWeather(locationKey) {
 
     card.innerHTML = `
       <h3>${place.name}</h3>
-
       <img
         class="weather-icon"
         src="https://openweathermap.org/img/wn/${icon}@2x.png"
         alt="${description}"
       >
-
       <div class="temperature">${temperature}°C</div>
-
       <p class="description">${description}</p>
-
       <div class="weather-extra">
         <div>Feels like: ${feelsLike}°C</div>
         <div>Humidity: ${humidity}%</div>
@@ -1040,9 +1100,7 @@ async function getWeather(locationKey) {
 }
 
 
-/* ==========================================
-   15A. WEATHER STATUS FOR EACH MAP PIN
-========================================== */
+// 18. WEATHER STATUS FOR EACH MAP PIN
 
 async function loadPinWeather(locationKey) {
   const place = locations[locationKey];
@@ -1059,7 +1117,6 @@ async function loadPinWeather(locationKey) {
   if (!apiKey) {
     target.innerHTML =
       "<strong>Weather:</strong> Add your OpenWeatherMap API key in Settings.";
-
     return;
   }
 
@@ -1115,9 +1172,65 @@ async function loadPinWeather(locationKey) {
 }
 
 
-/* ==========================================
-   16. LOAD ALL WEATHER CARDS
-========================================== */
+// 19. WEATHER AT SELECTED DESTINATION
+
+async function loadDestinationWeather(place) {
+  const apiKey = getApiKey();
+
+  const temp =
+    document.getElementById("destination-temperature");
+
+  const description =
+    document.getElementById("destination-description");
+
+  if (!apiKey) {
+    temp.textContent = "--°C";
+    description.textContent =
+      "Add an OpenWeather key in Settings";
+    return;
+  }
+
+  try {
+    const url =
+      `https://api.openweathermap.org/data/2.5/weather?lat=${place.lat}&lon=${place.lng}&appid=${encodeURIComponent(apiKey)}&units=metric`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("Weather unavailable");
+    }
+
+    const data = await response.json();
+
+    temp.textContent =
+      `${Math.round(data.main.temp)}°C`;
+
+    description.textContent =
+      `${place.name} · ${data.weather[0].description}`;
+
+    document.getElementById("destination-humidity").textContent =
+      `${data.main.humidity}%`;
+
+    document.getElementById("destination-wind").textContent =
+      `${Math.round(data.wind.speed * 3.6)} km/h`;
+
+    document.getElementById("destination-rain").textContent =
+      `${data.clouds?.all ?? "--"}% cloud cover`;
+
+    document.getElementById("top-temperature").textContent =
+      `${Math.round(data.main.temp)}°C`;
+
+    document.getElementById("top-condition").textContent =
+      data.weather[0].description;
+
+  } catch (error) {
+    description.textContent =
+      "Could not load destination weather";
+  }
+}
+
+
+// 20. LOAD ALL WEATHER CARDS
 
 async function loadAllWeather() {
   const updatedLabel =
@@ -1146,9 +1259,7 @@ document
   .addEventListener("click", loadAllWeather);
 
 
-/* ==========================================
-   17. INITIALIZE WEBSITE
-========================================== */
+// 21. INITIALIZE WEBSITE
 
 renderParcelList();
 
