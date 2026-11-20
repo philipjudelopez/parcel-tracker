@@ -1,7 +1,9 @@
+
 /* ==========================================
    PARCELTRACK MINDANAO
    Parcel Management + Leaflet + OpenWeather
 ========================================== */
+
 
 /* ==========================================
    1. CONFIGURATION AND STORAGE
@@ -113,7 +115,10 @@ try {
     localStorage.getItem(CUSTOM_LOCATIONS_STORAGE_KEY) || "{}"
   );
 
-  if (savedCustomLocations && typeof savedCustomLocations === "object") {
+  if (
+    savedCustomLocations &&
+    typeof savedCustomLocations === "object"
+  ) {
     Object.assign(locations, savedCustomLocations);
   }
 } catch (error) {
@@ -122,7 +127,9 @@ try {
 
 function saveCustomLocations() {
   const custom = Object.fromEntries(
-    Object.entries(locations).filter(([key]) => key.startsWith("custom_"))
+    Object.entries(locations).filter(([key]) =>
+      key.startsWith("custom_")
+    )
   );
 
   localStorage.setItem(
@@ -130,6 +137,7 @@ function saveCustomLocations() {
     JSON.stringify(custom)
   );
 }
+
 
 /* ==========================================
    2. SAMPLE PARCELS
@@ -155,6 +163,7 @@ const sampleParcels = {
 
 let parcels = loadParcels();
 let selectedTrackingNumber = null;
+
 
 /* ==========================================
    3. LOAD AND SAVE PARCELS
@@ -188,13 +197,13 @@ function saveParcels() {
       PARCEL_STORAGE_KEY,
       JSON.stringify(parcels)
     );
-
     return true;
   } catch (error) {
     console.error("Could not save parcel records:", error);
     return false;
   }
 }
+
 
 /* ==========================================
    4. API KEY SETTINGS
@@ -215,13 +224,11 @@ apiKeyForm.addEventListener("submit", function(event) {
 
   if (!key) {
     apiKeyMessage.textContent = "Please enter an API key.";
-
     showNotification(
       "Enter your OpenWeatherMap API key before saving.",
       "warning",
       "API key required"
     );
-
     return;
   }
 
@@ -284,11 +291,49 @@ document
     loadAllWeather();
   });
 
+
 /* ==========================================
    5. LEAFLET MAP
 ========================================== */
 
 const map = L.map("map").setView([7.9, 125.0], 7);
+
+// Responsive Leaflet map resizing.
+let mapResizeFrame = null;
+
+function refreshMapSize() {
+  if (mapResizeFrame) {
+    cancelAnimationFrame(mapResizeFrame);
+  }
+
+  mapResizeFrame = requestAnimationFrame(() => {
+    map.invalidateSize({
+      pan: false,
+      animate: false
+    });
+
+    mapResizeFrame = null;
+  });
+}
+
+window.addEventListener("resize", refreshMapSize, {
+  passive: true
+});
+
+window.addEventListener("orientationchange", () => {
+  setTimeout(refreshMapSize, 180);
+}, {
+  passive: true
+});
+
+if ("ResizeObserver" in window) {
+  const mapPanelObserver = new ResizeObserver(refreshMapSize);
+  const mapPanel = document.querySelector(".map-panel");
+
+  if (mapPanel) {
+    mapPanelObserver.observe(mapPanel);
+  }
+}
 
 const streetTiles = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -336,6 +381,7 @@ document.getElementById("satellite-mode").addEventListener("click", () => {
 const markerLayer = L.layerGroup().addTo(map);
 let routeLine = null;
 
+
 function createMarkerIcon(color) {
   return L.divIcon({
     className: "custom-map-marker",
@@ -353,6 +399,7 @@ function createMarkerIcon(color) {
     iconAnchor: [9, 9]
   });
 }
+
 
 /* ==========================================
    6. CREATE PARCEL ROUTE
@@ -403,6 +450,7 @@ function createParcelRoute(parcel) {
   }));
 }
 
+
 /* ==========================================
    7. DISPLAY ROUTE ON MAP
 ========================================== */
@@ -440,75 +488,66 @@ function updateMap(parcel, routeData) {
       markerColor = "#1677d2";
     }
 
-    const marker = L.marker(point, {
+    L.marker(point, {
       icon: createMarkerIcon(markerColor)
-    }).addTo(markerLayer);
-
-    const popupId = `pin-weather-${stop.location}`;
-
-    marker.bindPopup(`
-      <div style="min-width:180px">
-        <strong>${place.name}</strong>
-        <p>${stop.detail}</p>
-        <div class="pin-weather" id="${popupId}">
+    })
+      .bindPopup(`
+        <strong>${place.name}</strong><br>
+        ${stop.description}<br>
+        <small>${stop.detail}</small>
+        <div class="pin-weather" id="pin-weather-${stop.location}">
           <strong>Weather:</strong> Loading...
         </div>
-      </div>
-    `);
-
-    marker.on("popupopen", () => {
-      loadPinWeather(stop.location);
-    });
+      `)
+      .on("popupopen", () => loadPinWeather(stop.location))
+      .addTo(markerLayer);
   });
 
-  if (routeData && routeData.geometry) {
-    routeLine = L.geoJSON(routeData.geometry, {
-      style: {
-        color: "#20d98a",
-        weight: 5,
-        opacity: 0.9
-      }
-    }).addTo(map);
-  } else if (coordinates.length > 1) {
-    routeLine = L.polyline(coordinates, {
-      color: "#20d98a",
+  if (coordinates.length > 1) {
+    const roadCoordinates = routeData && routeData.geometry
+      ? routeData.geometry.coordinates.map(point => [
+          point[1],
+          point[0]
+        ])
+      : coordinates;
+
+    routeLine = L.polyline(roadCoordinates, {
+      color: "#1677d2",
       weight: 5,
-      opacity: 0.9,
-      dashArray: "9, 10"
+      opacity: 0.85,
+      dashArray: routeData && routeData.geometry ? null : "10, 8"
     }).addTo(map);
-  }
 
-  if (coordinates.length > 0) {
-    const bounds = L.latLngBounds(coordinates);
-
-    map.fitBounds(bounds, {
-      padding: [55, 55],
-      maxZoom: 9
+    map.fitBounds(routeLine.getBounds(), {
+      padding: [45, 45]
     });
+  } else if (coordinates.length === 1) {
+    map.setView(coordinates[0], 10);
   }
 }
 
+
 /* ==========================================
-   8. DELIVERY TIMELINE
+   8. UPDATE TIMELINE
 ========================================== */
 
 function updateTimeline(parcel) {
-  const container = document.getElementById("route-track");
-  container.replaceChildren();
+  const routeTrack = document.getElementById("route-track");
+
+  routeTrack.replaceChildren();
 
   const route = createParcelRoute(parcel);
 
-  route.forEach((stop, index) => {
+  route.forEach(stop => {
     const place = locations[stop.location];
 
-    if (!place) return;
-
-    const item = document.createElement("div");
-    item.className = `route-stop ${stop.status}`;
+    const element = document.createElement("div");
+    element.className = `route-stop ${stop.status}`;
 
     const marker = document.createElement("div");
     marker.className = "route-marker";
-    marker.textContent = index + 1;
+    marker.textContent =
+      stop.status === "completed" ? "✓" : "●";
 
     const info = document.createElement("div");
     info.className = "route-info";
@@ -523,13 +562,14 @@ function updateTimeline(parcel) {
     detail.textContent = stop.detail;
 
     info.append(heading, description, detail);
-    item.append(marker, info);
-    container.appendChild(item);
+    element.append(marker, info);
+    routeTrack.appendChild(element);
   });
 }
 
+
 /* ==========================================
-   9. ROUTE DISTANCE CALCULATION
+   9. AUTOMATIC ROAD ROUTE DISTANCE
 ========================================== */
 
 function formatDistance(meters) {
@@ -618,6 +658,7 @@ async function calculateRoadRoute(route) {
   }
 }
 
+
 /* ==========================================
    10. DISPLAY SELECTED PARCEL
 ========================================== */
@@ -633,7 +674,7 @@ async function displayParcel(trackingNumber) {
     message.style.color = "#ffb7b7";
 
     showNotification(
-      "We couldn't find a parcel with that tracking ID.",
+      "No parcel matches that tracking ID or destination. Check your search and try again.",
       "error",
       "Parcel not found"
     );
@@ -649,9 +690,9 @@ async function displayParcel(trackingNumber) {
       "This parcel has invalid location information.";
 
     showNotification(
-      "The parcel's origin or destination could not be located.",
+      "This parcel has missing or invalid origin/destination coordinates.",
       "error",
-      "Invalid parcel location"
+      "Invalid parcel route"
     );
 
     return;
@@ -697,20 +738,23 @@ async function displayParcel(trackingNumber) {
       ? "Driving distance along the road route, including the Manolo Fortich sorting hub where applicable."
       : "Road routing is temporarily unavailable. Showing a straight-line distance estimate, not road distance.";
 
-  message.textContent = "Parcel information loaded successfully.";
+  message.textContent =
+    "Parcel information loaded successfully.";
+
   message.style.color = "#b9f3d1";
+
+  showNotification(
+    `Tracking details for ${trackingNumber} are now displayed.`,
+    "success",
+    "Parcel located"
+  );
 
   updateTimeline(parcel);
   updateMap(parcel, routeData);
   renderParcelList();
   loadDestinationWeather(destination);
-
-  showNotification(
-    `Tracking details for ${trackingNumber} have been loaded.`,
-    "success",
-    "Parcel found"
-  );
 }
+
 
 /* ==========================================
    11. SEARCH PARCEL
@@ -728,22 +772,21 @@ document
 
     const normalized = query.toUpperCase();
 
-    // First try an exact tracking ID, then search origin/destination names.
     if (parcels[normalized]) {
       displayParcel(normalized);
       return;
     }
 
-    const match = Object.entries(parcels).find(([trackingId, parcel]) => {
-      const origin = locations[parcel.origin]?.name || "";
-      const destination = locations[parcel.destination]?.name || "";
+    const match = Object.entries(parcels).find(
+      ([trackingId, parcel]) => {
+        const origin = locations[parcel.origin]?.name || "";
+        const destination = locations[parcel.destination]?.name || "";
 
-      return (
-        trackingId.toUpperCase().includes(normalized) ||
-        origin.toLowerCase().includes(query.toLowerCase()) ||
-        destination.toLowerCase().includes(query.toLowerCase())
-      );
-    });
+        return trackingId.toUpperCase().includes(normalized) ||
+          origin.toLowerCase().includes(query.toLowerCase()) ||
+          destination.toLowerCase().includes(query.toLowerCase());
+      }
+    );
 
     if (match) {
       document.getElementById("tracking-number").value = match[0];
@@ -757,12 +800,13 @@ document
       feedback.style.color = "#ffb7b7";
 
       showNotification(
-        "No parcel matches the tracking ID or destination you entered.",
+        "No parcel matched your tracking ID or destination search.",
         "error",
-        "Search unsuccessful"
+        "Search returned no results"
       );
     }
   });
+
 
 /* ==========================================
    12. ADD NEW PARCEL
@@ -790,7 +834,9 @@ async function geocodeMindanaoPlace(query) {
   );
 
   if (!response.ok) {
-    throw new Error("Place search is unavailable. Please try again.");
+    throw new Error(
+      "Place search is unavailable. Please try again."
+    );
   }
 
   const results = await response.json();
@@ -841,12 +887,13 @@ addParcelForm.addEventListener("submit", async function(event) {
   );
 
   if (!trackingNumber || !originQuery || !destinationQuery) {
-    message.textContent = "Please complete all parcel information.";
+    message.textContent =
+      "Please complete all parcel information.";
 
     showNotification(
-      "Please complete the tracking ID, origin, and destination fields.",
+      "Fill in the tracking ID, origin, and destination.",
       "warning",
-      "Incomplete information"
+      "Missing parcel details"
     );
 
     return;
@@ -857,7 +904,7 @@ addParcelForm.addEventListener("submit", async function(event) {
       "Use 5–30 characters: letters, numbers, or hyphens.";
 
     showNotification(
-      "Tracking ID must contain 5–30 letters, numbers, or hyphens.",
+      "Tracking IDs must contain 5–30 letters, numbers, or hyphens.",
       "warning",
       "Invalid tracking ID"
     );
@@ -866,11 +913,12 @@ addParcelForm.addEventListener("submit", async function(event) {
   }
 
   if (parcels[trackingNumber]) {
-    message.textContent = "That tracking number already exists.";
+    message.textContent =
+      "That tracking number already exists.";
 
     showNotification(
-      "A parcel with that tracking ID is already registered.",
-      "warning",
+      "A parcel with this tracking ID is already registered.",
+      "error",
       "Duplicate tracking ID"
     );
 
@@ -882,7 +930,7 @@ addParcelForm.addEventListener("submit", async function(event) {
       "Origin and destination must be different.";
 
     showNotification(
-      "Choose a different origin and destination.",
+      "Choose two different places for the parcel route.",
       "warning",
       "Invalid route"
     );
@@ -892,12 +940,14 @@ addParcelForm.addEventListener("submit", async function(event) {
 
   submitButton.disabled = true;
   submitButton.textContent = "Finding places...";
-  message.textContent = "Looking up both locations in Mindanao...";
+
+  message.textContent =
+    "Looking up both locations in Mindanao...";
 
   showNotification(
-    "Searching for the origin and destination on the map.",
+    "Finding the origin and destination on the Mindanao map. This may take a moment.",
     "info",
-    "Finding locations"
+    "Looking up locations"
   );
 
   let originKey;
@@ -937,10 +987,11 @@ addParcelForm.addEventListener("submit", async function(event) {
       );
     }
 
-    message.textContent = "Parcel added and locations saved!";
+    message.textContent =
+      "Parcel added and locations saved!";
 
     showNotification(
-      `Parcel ${trackingNumber} has been registered successfully.`,
+      `${trackingNumber} was added successfully and its route is ready to view.`,
       "success",
       "Parcel added"
     );
@@ -958,9 +1009,10 @@ addParcelForm.addEventListener("submit", async function(event) {
       error.message || "Could not locate one of those places.";
 
     showNotification(
-      error.message || "Could not locate one of those places.",
+      error.message ||
+      "Could not locate one of those places. Check the place names and try again.",
       "error",
-      "Unable to add parcel"
+      "Could not add parcel"
     );
 
   } finally {
@@ -969,8 +1021,9 @@ addParcelForm.addEventListener("submit", async function(event) {
   }
 });
 
+
 /* ==========================================
-   13. DASHBOARD STATISTICS AND PARCEL LIST
+   13. DASHBOARD AND PARCEL LIST
 ========================================== */
 
 function updateDashboardStats() {
@@ -1081,6 +1134,7 @@ function renderParcelList() {
   });
 }
 
+
 /* ==========================================
    14. DELETE PARCEL
 ========================================== */
@@ -1135,7 +1189,6 @@ function deleteParcel(trackingNumber) {
         "Select a parcel to calculate its route distance.";
 
       document.getElementById("route-track").replaceChildren();
-
       markerLayer.clearLayers();
 
       if (routeLine) {
@@ -1147,6 +1200,7 @@ function deleteParcel(trackingNumber) {
     }
   }
 }
+
 
 /* ==========================================
    15. OPENWEATHER API
@@ -1245,6 +1299,7 @@ async function getWeather(locationKey) {
   }
 }
 
+
 /* ==========================================
    15A. WEATHER STATUS FOR EACH MAP PIN
 ========================================== */
@@ -1284,15 +1339,16 @@ async function loadPinWeather(locationKey) {
         throw new Error("Invalid API key");
       }
 
-      throw new Error(`Weather unavailable (${response.status})`);
+      throw new Error(
+        `Weather unavailable (${response.status})`
+      );
     }
 
     const data = await response.json();
 
-    const condition =
-      data.weather && data.weather[0]
-        ? data.weather[0].description
-        : "Conditions unavailable";
+    const condition = data.weather && data.weather[0]
+      ? data.weather[0].description
+      : "Conditions unavailable";
 
     const temperature = Math.round(data.main.temp);
     const humidity = data.main.humidity;
@@ -1315,9 +1371,6 @@ async function loadPinWeather(locationKey) {
   }
 }
 
-/* ==========================================
-   15B. DESTINATION WEATHER
-========================================== */
 
 async function loadDestinationWeather(place) {
   const apiKey = getApiKey();
@@ -1345,7 +1398,8 @@ async function loadDestinationWeather(place) {
 
     const data = await response.json();
 
-    temp.textContent = `${Math.round(data.main.temp)}°C`;
+    temp.textContent =
+      `${Math.round(data.main.temp)}°C`;
 
     description.textContent =
       `${place.name} · ${data.weather[0].description}`;
@@ -1376,6 +1430,7 @@ async function loadDestinationWeather(place) {
     );
   }
 }
+
 
 /* ==========================================
    16. LOAD ALL WEATHER CARDS
@@ -1413,6 +1468,7 @@ async function loadAllWeather() {
 document
   .getElementById("refresh-weather")
   .addEventListener("click", loadAllWeather);
+
 
 /* ==========================================
    17. INITIALIZE WEBSITE

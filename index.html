@@ -1,9 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#061b2a">
+  <meta name="description" content="Track parcels across Mindanao with route distance, delivery updates, and destination weather.">
   <title>Mindanao Parcel Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +21,7 @@
       <span class="brand-name">Mindanao<br>Parcel Tracker</span>
       <em>Track. Know. Deliver.</em>
     </a>
-    <nav class="side-nav">
+    <nav class="side-nav" aria-label="Main navigation">
       <a class="active" href="#dashboard"><span>⌖</span>Track Parcel</a>
       <a href="#add-parcel"><span>＋</span>Add Parcel</a>
       <a href="#about"><span>ⓘ</span>About</a>
@@ -55,25 +57,53 @@
 
     <section class="dashboard-grid">
       <div class="map-panel panel">
-        <div class="map-controls"><button class="map-mode active" id="street-mode" type="button">Map</button><button class="map-mode active" id="satellite-mode" type="button">Satellite</button></div>
+        <div class="map-controls">
+          <button class="map-mode active" id="street-mode" type="button">Map</button>
+          <button class="map-mode active" id="satellite-mode" type="button">Satellite</button>
+        </div>
         <div class="map-compass">N</div>
-        <div id="map"></div>
-        <div class="map-caption"><span><i class="dot origin-dot"></i> Origin</span><span><i class="dot hub-dot"></i> Sorting hub</span><span><i class="dot destination-dot"></i> Destination</span></div>
+        <div id="map" role="region" aria-label="Interactive Mindanao parcel route map"></div>
+        <div class="map-caption">
+          <span><i class="dot origin-dot"></i> Origin</span>
+          <span><i class="dot hub-dot"></i> Sorting hub</span>
+          <span><i class="dot destination-dot"></i> Destination</span>
+        </div>
       </div>
 
       <aside class="detail-column">
         <article class="info-panel tracking-panel">
           <div class="large-icon">📦</div>
-          <div class="tracking-info"><small>Tracking ID</small><h2 id="tracking-code">MND123456789</h2><p class="tracking-route-meta">From <b id="origin-location">Davao City</b> · Next <b id="next-location">Manolo Fortich</b> · To <b id="destination-location">Iligan City</b></p></div>
+          <div class="tracking-info">
+            <small>Tracking ID</small>
+            <h2 id="tracking-code">MND123456789</h2>
+            <p class="tracking-route-meta">From <b id="origin-location">Davao City</b> · Next <b id="next-location">Manolo Fortich</b> · To <b id="destination-location">Iligan City</b></p>
+          </div>
           <span id="shipment-status" class="status-badge">In Transit</span>
         </article>
+
         <article class="info-panel route-panel">
           <div class="panel-symbol blue-symbol">〰</div>
-          <div><small>Route Distance</small><h2 id="route-distance">Calculating...</h2><p id="route-distance-note">Driving route via the road network</p></div>
+          <div>
+            <small>Route Distance</small>
+            <h2 id="route-distance">Calculating...</h2>
+            <p id="route-distance-note">Driving route via the road network</p>
+          </div>
         </article>
+
         <article class="info-panel destination-panel">
-          <div class="weather-title"><span class="weather-big-icon">🌤️</span><div><small>Weather at Destination</small><h2 id="destination-temperature">--°C</h2><p id="destination-description">Add an OpenWeather key in Settings</p></div></div>
-          <div class="weather-metrics"><span>💧 Humidity <b id="destination-humidity">--%</b></span><span>🌬 Wind <b id="destination-wind">--</b></span><span>☁ Cloud cover <b id="destination-rain">--</b></span></div>
+          <div class="weather-title">
+            <span class="weather-big-icon">🌤️</span>
+            <div>
+              <small>Weather at Destination</small>
+              <h2 id="destination-temperature">--°C</h2>
+              <p id="destination-description">Add an OpenWeather key in Settings</p>
+            </div>
+          </div>
+          <div class="weather-metrics">
+            <span>💧 Humidity <b id="destination-humidity">--%</b></span>
+            <span>🌬 Wind <b id="destination-wind">--</b></span>
+            <span>☁ Cloud cover <b id="destination-rain">--</b></span>
+          </div>
         </article>
       </aside>
     </section>
@@ -84,7 +114,11 @@
         <div id="route-track" class="route-track"></div>
       </article>
       <article class="promo-panel">
-        <div class="promo-copy"><span>📍</span><strong>Mindanao<br>Connected</strong><small>One Delivery at a Time</small></div>
+        <div class="promo-copy">
+          <span>📍</span>
+          <strong>Mindanao<br>Connected</strong>
+          <small>One Delivery at a Time</small>
+        </div>
       </article>
     </section>
 
@@ -102,6 +136,7 @@
           <p id="add-parcel-message" class="form-message-dark" aria-live="polite"></p>
         </form>
       </article>
+
       <article class="panel lower-panel">
         <div class="panel-heading"><span>▤</span><h2>Registered Parcels</h2></div>
         <div id="parcel-list" class="parcel-list"></div>
@@ -109,7 +144,10 @@
     </section>
 
     <section class="panel lower-panel weather-section" id="weather">
-      <div class="panel-heading"><span>☀</span><h2>Weather Monitoring</h2><button id="refresh-weather" class="secondary-button" type="button">Refresh</button></div>
+      <div class="panel-heading">
+        <span>☀</span><h2>Weather Monitoring</h2>
+        <button id="refresh-weather" class="secondary-button" type="button">Refresh</button>
+      </div>
       <p id="weather-updated" class="form-hint">Weather data provided by OpenWeatherMap.</p>
       <div class="weather-grid">
         <article class="weather-card" id="weather-davao"><h3>Davao City</h3><p class="weather-loading">Loading weather...</p></article>
@@ -122,17 +160,25 @@
     <section class="panel lower-panel" id="settings">
       <div class="panel-heading"><span>⚙</span><h2>API Settings</h2></div>
       <form id="api-key-form" class="settings-form">
-        <label>OpenWeatherMap API Key<div class="api-input-row"><input type="password" id="api-key-input" placeholder="Enter your API key"><button type="button" id="toggle-api-key" class="secondary-button">Show</button></div></label>
-        <div class="settings-actions"><button class="primary-button" type="submit">Save API Key</button><button type="button" id="remove-api-key" class="delete-button">Remove Key</button></div>
+        <label>OpenWeatherMap API Key
+          <div class="api-input-row">
+            <input type="password" id="api-key-input" placeholder="Enter your API key">
+            <button type="button" id="toggle-api-key" class="secondary-button">Show</button>
+          </div>
+        </label>
+        <div class="settings-actions">
+          <button class="primary-button" type="submit">Save API Key</button>
+          <button type="button" id="remove-api-key" class="delete-button">Remove Key</button>
+        </div>
         <p id="api-key-message" class="form-message-dark" aria-live="polite"></p>
       </form>
       <p class="security-note">This prototype stores the API key in browser local storage. Use a secure backend proxy before deploying publicly.</p>
     </section>
+
     <footer id="about">Mindanao Parcel Tracker · Track. Know. Deliver. · Map data © OpenStreetMap contributors</footer>
   </main>
 </div>
 
-<!-- Notification Pop-up Container -->
 <div id="notification-container" class="notification-container" aria-live="polite" aria-atomic="false"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
