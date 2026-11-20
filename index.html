@@ -4,469 +4,410 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#075cf5">
   <title>ParcelTrack Mindanao</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-  <!-- NAVIGATION -->
-  <header class="topbar">
-    <a class="brand" href="#">
-      <span class="brand-mark">◇</span>
-      ParcelTrack
-      <span class="region-tag">MINDANAO</span>
-    </a>
-
-    <nav class="navigation">
-      <a class="active" href="#tracking">⌂ Track Package</a>
-      <a href="#coverage">Coverage</a>
-      <a href="#about">About</a>
-      <a href="#help">Help</a>
-    </nav>
-
-    <div class="top-actions">
-      <button class="icon-button">♧</button>
-      <div class="avatar">📦</div>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      <span class="logo-icon">📦</span>
+      <div>
+        <h2>ParcelTrack</h2>
+        <small>Mindanao Delivery Network</small>
+      </div>
     </div>
+
+    <nav>
+      <a href="#home">Home</a>
+      <a href="#tracking">Track Parcel</a>
+      <a href="#route">Delivery Route</a>
+      <a href="#weather">Weather</a>
+    </nav>
   </header>
 
+
   <!-- HERO SECTION -->
-  <section class="hero" id="tracking">
-
-    <div class="hero-map-art">
-      <div class="island-shape"></div>
-      <div class="route-line"></div>
-
-      <div class="hero-location hub">
-        <span class="pin-dot"></span>
-        <b>Manolo Fortich</b>
-        <small>MAIN HUB · Bukidnon</small>
-      </div>
-
-      <div class="hero-location cdo">
-        <span class="pin-dot"></span>
-        <b>Cagayan de Oro</b>
-        <small>28°C · Partly cloudy</small>
-      </div>
-
-      <div class="hero-location davao">
-        <span class="pin-dot"></span>
-        <b>Davao City</b>
-        <small>31°C · Cloudy</small>
-      </div>
-    </div>
-
-    <div class="hero-weather">
-      <span>Mindanao Weather</span>
-      <strong>28°C</strong>
-      <b>Partly Cloudy</b>
-      <small>Manolo Fortich · Demo data</small>
-    </div>
-
+  <section class="hero" id="home">
     <div class="hero-content">
+      <span class="hero-label">MINDANAO PARCEL MONITORING</span>
 
-      <div class="eyebrow">
-        Mindanao-Wide Tracking
-        <span>•</span>
-        Weather Aware
-      </div>
-
-      <h1>
-        Track Your Parcel<br>
-        Across Mindanao
-      </h1>
+      <h1>Track Your Parcel<br>Across Mindanao</h1>
 
       <p>
-        Follow every delivery from our main hub
-        in Manolo Fortich to communities across Mindanao.
+        Monitor your shipment, view its delivery route,
+        and check estimated arrival information in real time.
       </p>
 
-      <form class="track-form" id="track-form">
-
-        <span class="package-icon">◇</span>
-
+      <!-- PARCEL SEARCH -->
+      <form id="track-form" class="tracking-form">
         <input
-          id="tracking-number"
           type="text"
-          value="MND123456789"
-          placeholder="Enter tracking number"
-          aria-label="Tracking number"
+          id="tracking-number"
+          placeholder="Enter your tracking number"
+          autocomplete="off"
+          required
         >
 
-        <button type="submit">
-          ⌕ <span>Track</span>
-        </button>
-
+        <button type="submit">Search Parcel</button>
       </form>
 
-      <p class="form-hint" id="form-message"></p>
-
+      <p id="form-message" class="form-message">
+        Try: MND123456789
+      </p>
     </div>
   </section>
 
-  <!-- MAIN CONTENT -->
-  <main class="page-content">
 
-    <div class="region-heading" id="coverage">
-      <div>
-        <span class="eyebrow small-eyebrow">
-          LOCAL DELIVERY NETWORK
-        </span>
-        <h2>One Mindanao. One tracking hub.</h2>
-      </div>
+  <!-- TRACKING SECTION -->
+  <main class="main-container" id="tracking">
 
-      <p>
-        Our sample network is centered in
-        <strong>Manolo Fortich, Bukidnon</strong>.
-      </p>
-    </div>
+    <section class="section-heading">
+      <span class="section-label">SHIPMENT INFORMATION</span>
+      <h2>Parcel Tracking Details</h2>
+      <p>View your parcel's current status and estimated delivery.</p>
+    </section>
 
-    <!-- TRACKING CARD -->
+    <!-- SHIPMENT SUMMARY -->
     <section class="tracking-card">
 
-      <!-- SHIPMENT INFORMATION -->
-      <div class="shipment-summary">
+      <div class="tracking-header">
+        <div>
+          <span class="small-label">TRACKING NUMBER</span>
+          <h3 id="tracking-code">MND123456789</h3>
+        </div>
 
-        <span class="status-pill">
-          <i></i> In Transit
+        <span id="shipment-status" class="status-badge">
+          In Transit
         </span>
+      </div>
 
-        <h2 id="tracking-code">MND123456789</h2>
+      <div class="tracking-details">
 
-        <p>▣ &nbsp;Estimated Delivery</p>
-
-        <strong class="delivery-date">
-          ▣ &nbsp;Nov 22, 2026
-        </strong>
-
-        <div class="parcel-illustration">
-          <div class="parcel-tape"></div>
+        <div class="detail-item">
+          <span class="small-label">ORIGIN</span>
+          <h3 id="origin-location">Davao City</h3>
         </div>
 
-        <div class="hub-note">
-          <span>★</span> Main sorting hub<br>
-          <b>Manolo Fortich, Bukidnon</b>
+        <div class="detail-item">
+          <span class="small-label">DESTINATION</span>
+          <h3 id="destination-location">Iligan City</h3>
+        </div>
+
+        <div class="detail-item">
+          <span class="small-label">NEXT LOCATION</span>
+          <h3 id="next-location">Manolo Fortich</h3>
         </div>
 
       </div>
 
-      <!-- TRACKING TIMELINE -->
-      <div class="timeline">
-
-        <div class="timeline-step complete">
-          <span class="step-dot">✓</span>
+      <!-- ETA -->
+      <div class="eta-box">
+        <div class="eta-heading">
+          <span>🚚</span>
           <div>
-            <b>Arrived at Main Hub</b>
-            <small>
-              Manolo Fortich, Bukidnon · Nov 20, 2026, 8:15 AM
-            </small>
+            <span class="small-label">ESTIMATED ARRIVAL</span>
+            <h2 id="eta-date">November 22, 2026</h2>
           </div>
         </div>
 
-        <div class="timeline-step complete">
-          <span class="step-dot">✓</span>
+        <div class="eta-details">
           <div>
-            <b>Departed from Origin</b>
-            <small>
-              Davao City · Nov 19, 2026, 7:40 PM
-            </small>
+            <span class="small-label">Estimated Time</span>
+            <h3 id="eta-time">3:00 PM</h3>
+          </div>
+
+          <div>
+            <span class="small-label">Time Remaining</span>
+            <h3 id="remaining-time">2 days</h3>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- DELIVERY ROUTE -->
+    <section class="route-section" id="route">
+
+      <div class="section-heading">
+        <span class="section-label">PARCEL JOURNEY</span>
+        <h2>Delivery Route</h2>
+        <p>Follow your parcel's journey through the Mindanao network.</p>
+      </div>
+
+      <!-- ROUTE TIMELINE -->
+      <div class="route-track" id="route-track">
+
+        <div class="route-stop completed">
+          <div class="route-marker">✓</div>
+          <div class="route-info">
+            <h4>Davao City</h4>
+            <p>Parcel received</p>
+            <small>Origin facility</small>
           </div>
         </div>
 
-        <div class="timeline-step current">
-          <span class="step-dot">●</span>
-          <div>
-            <b>Shipment Picked Up</b>
-            <small>
-              Davao City · Nov 19, 2026, 3:20 PM
-            </small>
+        <div class="route-stop current">
+          <div class="route-marker">●</div>
+          <div class="route-info">
+            <h4>Manolo Fortich</h4>
+            <p>Parcel sorting hub</p>
+            <small>Main distribution center</small>
           </div>
         </div>
 
-        <div class="timeline-step">
-          <span class="step-dot"></span>
-          <div>
-            <b>Label Created</b>
-            <small>
-              Davao City · Nov 19, 2026, 1:05 PM
-            </small>
+        <div class="route-stop">
+          <div class="route-marker">○</div>
+          <div class="route-info">
+            <h4>Cagayan de Oro</h4>
+            <p>Next distribution point</p>
+            <small>Regional facility</small>
+          </div>
+        </div>
+
+        <div class="route-stop">
+          <div class="route-marker">○</div>
+          <div class="route-info">
+            <h4>Iligan City</h4>
+            <p>Final destination</p>
+            <small>Awaiting delivery</small>
           </div>
         </div>
 
       </div>
 
-      <!-- MINDANAO MAP -->
-      <div class="map-panel">
+    </section>
 
-        <div class="map-heading">
-          <span class="live-dot"></span>
-          Mindanao Delivery Map
-          <small>Illustrative route</small>
+
+    <!-- MINDANAO MAP -->
+    <section class="map-section">
+
+      <div class="section-heading">
+        <span class="section-label">LIVE ROUTE VISUALIZATION</span>
+        <h2>Mindanao Delivery Map</h2>
+        <p>
+          Visualize the parcel route and its distribution points
+          across Mindanao.
+        </p>
+      </div>
+
+      <div class="map-container">
+
+        <div class="map-header">
+          <div>
+            <h3>Parcel Route Overview</h3>
+            <p>Mindanao, Philippines</p>
+          </div>
+
+          <span class="map-status">
+            ● Route Monitoring
+          </span>
         </div>
 
-        <svg
-          class="route-map"
-          viewBox="0 0 760 410"
-          role="img"
-          aria-label="Illustrative Mindanao delivery network"
-        >
+        <div class="map-visual">
 
-          <defs>
-
-            <linearGradient id="sea" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#147fc4"/>
-              <stop offset="1" stop-color="#052b70"/>
-            </linearGradient>
-
-            <pattern
-              id="grid"
-              width="42"
-              height="42"
-              patternUnits="userSpaceOnUse"
-            >
-              <path
-                d="M42 0H0V42"
-                fill="none"
-                stroke="#b7e7ff"
-                stroke-opacity=".12"
-              />
-            </pattern>
-
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="5" result="blur"/>
-              <feMerge>
-                <feMergeNode in="blur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-
-          </defs>
-
-          <rect width="760" height="410" fill="url(#sea)"/>
-          <rect width="760" height="410" fill="url(#grid)"/>
-
-          <!-- MINDANAO ISLAND -->
-          <path
-            d="M265 28 L326 38 370 72 418 76 447 113
-            488 129 509 174 552 195 573 239 552 276
-            524 292 500 337 455 365 412 354 378 382
-            334 359 299 365 265 333 229 325 208 290
-            174 273 154 236 169 204 150 174 174 140
-            189 100 225 83 235 49 Z"
-            fill="#55bb91"
-            stroke="#b8f0c7"
-            stroke-width="4"
-          />
-
-          <!-- ISLAND ROAD DETAILS -->
-          <path
-            d="M250 80 Q345 130 420 145 T525 245
-            M420 145 Q380 235 330 310
-            M420 145 Q485 120 545 205
-            M330 310 Q270 265 205 240"
-            fill="none"
-            stroke="#d9ffe7"
-            stroke-opacity=".25"
-            stroke-width="2"
-            stroke-dasharray="5 7"
-          />
-
-          <!-- ROUTES FROM MANOLO FORTICH -->
-          <g
-            fill="none"
-            stroke="#a9efff"
-            stroke-width="4"
-            stroke-dasharray="8 8"
-            filter="url(#glow)"
+          <svg
+            id="map-route"
+            viewBox="0 0 800 520"
+            xmlns="http://www.w3.org/2000/svg"
+            role="img"
+            aria-label="Illustrative parcel route map across Mindanao"
           >
-            <path d="M385 142 Q330 115 292 120"/>
-            <path d="M385 142 Q450 175 500 245"/>
-            <path d="M385 142 Q420 85 455 70"/>
-            <path d="M385 142 Q330 220 280 275"/>
-            <path d="M385 142 Q470 260 465 325"/>
-            <path d="M385 142 Q240 180 195 210"/>
-          </g>
 
-          <!-- MAIN HUB -->
-          <g transform="translate(385 142)">
-            <circle r="29" fill="#ffcf59" opacity=".25"/>
-            <circle
-              r="18"
-              fill="#ffbd35"
-              stroke="#fff"
-              stroke-width="4"
+            <!-- MAP BACKGROUND -->
+            <rect
+              x="0"
+              y="0"
+              width="800"
+              height="520"
+              rx="16"
+              fill="#eaf4f7"
             />
-            <text
-              x="23"
-              y="-7"
-              fill="#fff"
-              font-size="16"
-              font-weight="800"
-            >
-              MANOLO FORTICH
-            </text>
-            <text x="23" y="12" fill="#e4f4ff" font-size="12">
-              MAIN HUB · BUKIDNON
-            </text>
-          </g>
 
-          <!-- CAGAYAN DE ORO -->
-          <g transform="translate(292 120)">
-            <circle r="10" fill="#0878ff" stroke="#fff" stroke-width="3"/>
-            <text x="-8" y="-17" fill="#fff" font-size="13" text-anchor="middle">
-              Cagayan de Oro
-            </text>
-          </g>
+            <!-- DECORATIVE GRID -->
+            <g stroke="#d7e7eb" stroke-width="1">
+              <path d="M0 100 H800 M0 200 H800 M0 300 H800 M0 400 H800"/>
+              <path d="M100 0 V520 M200 0 V520 M300 0 V520 M400 0 V520 M500 0 V520 M600 0 V520 M700 0 V520"/>
+            </g>
 
-          <!-- DAVAO -->
-          <g transform="translate(500 245)">
-            <circle r="9" fill="#0878ff" stroke="#fff" stroke-width="3"/>
-            <text x="15" y="5" fill="#fff" font-size="13">
+            <!-- MINDANAO LAND SHAPE -->
+            <path
+              d="M180 80
+                 L260 55
+                 L330 85
+                 L410 70
+                 L490 100
+                 L550 145
+                 L625 160
+                 L660 220
+                 L625 280
+                 L650 335
+                 L590 390
+                 L530 420
+                 L470 460
+                 L400 445
+                 L350 480
+                 L285 440
+                 L230 410
+                 L180 350
+                 L130 300
+                 L145 230
+                 L110 180
+                 Z"
+              fill="#cce8d5"
+              stroke="#8bbfa0"
+              stroke-width="3"
+            />
+
+            <!-- ROUTE PATH -->
+            <path
+              id="route-base"
+              d="M260 370 L390 250 L500 200 L550 145"
+              fill="none"
+              stroke="#9bb4bd"
+              stroke-width="5"
+              stroke-dasharray="8 9"
+              stroke-linecap="round"
+            />
+
+            <path
+              id="route-progress"
+              d="M260 370 L390 250"
+              fill="none"
+              stroke="#1677d2"
+              stroke-width="6"
+              stroke-linecap="round"
+            />
+
+            <!-- ORIGIN MARKER -->
+            <circle cx="260" cy="370" r="12" fill="#16a36a" stroke="white" stroke-width="4"/>
+            <text x="230" y="402" font-size="15" font-weight="bold" fill="#24445a">
               Davao City
             </text>
-          </g>
 
-          <!-- BUTUAN -->
-          <g transform="translate(455 70)">
-            <circle r="8" fill="#0878ff" stroke="#fff" stroke-width="3"/>
-            <text x="14" y="-8" fill="#fff" font-size="12">
-              Butuan
+            <!-- HUB MARKER -->
+            <circle cx="390" cy="250" r="14" fill="#1677d2" stroke="white" stroke-width="4"/>
+            <text x="405" y="240" font-size="15" font-weight="bold" fill="#24445a">
+              Manolo Fortich
             </text>
-          </g>
 
-          <!-- ILIGAN -->
-          <g transform="translate(280 275)">
-            <circle r="8" fill="#0878ff" stroke="#fff" stroke-width="3"/>
-            <text x="-8" y="24" fill="#fff" font-size="12" text-anchor="middle">
-              Iligan
+            <!-- OTHER CITY MARKERS -->
+            <circle cx="500" cy="200" r="9" fill="#ffffff" stroke="#1677d2" stroke-width="4"/>
+            <text x="515" y="195" font-size="14" fill="#24445a">
+              Cagayan de Oro
             </text>
-          </g>
 
-          <!-- GENERAL SANTOS -->
-          <g transform="translate(465 325)">
-            <circle r="8" fill="#0878ff" stroke="#fff" stroke-width="3"/>
-            <text x="14" y="5" fill="#fff" font-size="12">
-              General Santos
+            <circle cx="550" cy="145" r="9" fill="#ffffff" stroke="#1677d2" stroke-width="4"/>
+            <text x="565" y="140" font-size="14" fill="#24445a">
+              Iligan City
             </text>
-          </g>
 
-          <!-- ZAMBOANGA -->
-          <g transform="translate(195 210)">
-            <circle r="8" fill="#0878ff" stroke="#fff" stroke-width="3"/>
-            <text x="-8" y="-15" fill="#fff" font-size="12" text-anchor="middle">
-              Zamboanga
+            <!-- MAP LABEL -->
+            <text
+              x="400"
+              y="490"
+              text-anchor="middle"
+              font-size="16"
+              font-weight="bold"
+              fill="#66818b"
+            >
+              MINDANAO DELIVERY NETWORK
             </text>
-          </g>
 
-          <text x="24" y="380" fill="#fff" font-size="12" opacity=".8">
-            MINDANAO, PHILIPPINES · ROUTE CONCEPT
-          </text>
-
-        </svg>
-
-        <!-- WEATHER MONITORING -->
-        <div class="weather-list">
-
-          <div class="weather-stop">
-            <span>📍 Manolo Fortich</span>
-            <b>⛅ 28°C</b>
-            <small>Partly Cloudy · Main Hub</small>
-          </div>
-
-          <div class="weather-stop">
-            <span>📍 Cagayan de Oro</span>
-            <b>🌦 29°C</b>
-            <small>Scattered Showers</small>
-          </div>
-
-          <div class="weather-stop">
-            <span>📍 Davao City</span>
-            <b>☁️ 31°C</b>
-            <small>Cloudy</small>
-          </div>
-
-          <div class="weather-stop">
-            <span>📍 Butuan</span>
-            <b>🌤 30°C</b>
-            <small>Mostly Sunny</small>
-          </div>
+          </svg>
 
         </div>
+
+        <!-- MAP LEGEND -->
+        <div class="map-legend">
+          <div>
+            <span class="legend-dot origin-dot"></span>
+            <span>Origin</span>
+          </div>
+
+          <div>
+            <span class="legend-dot hub-dot"></span>
+            <span>Sorting Hub</span>
+          </div>
+
+          <div>
+            <span class="legend-dot destination-dot"></span>
+            <span>Destination</span>
+          </div>
+        </div>
+
       </div>
 
     </section>
 
-    <!-- COVERAGE -->
-    <section class="coverage-list">
-      <h3>Mindanao Service Areas</h3>
 
-      <div class="coverage-chips">
-        <span>Manolo Fortich · Main Hub</span>
-        <span>Cagayan de Oro</span>
-        <span>Iligan</span>
-        <span>Butuan</span>
-        <span>Davao City</span>
-        <span>General Santos</span>
-        <span>Zamboanga</span>
+    <!-- WEATHER MONITORING -->
+    <section class="weather-section" id="weather">
+
+      <div class="section-heading">
+        <span class="section-label">WEATHER MONITORING</span>
+        <h2>Weather Along the Route</h2>
+        <p>Weather conditions at important Mindanao delivery locations.</p>
       </div>
+
+      <div class="weather-grid">
+
+        <div class="weather-card">
+          <span class="weather-icon">🌤️</span>
+          <h3>Davao City</h3>
+          <h2>29°C</h2>
+          <p>Partly Cloudy</p>
+          <small>Origin location</small>
+        </div>
+
+        <div class="weather-card">
+          <span class="weather-icon">🌦️</span>
+          <h3>Manolo Fortich</h3>
+          <h2>24°C</h2>
+          <p>Light Rain</p>
+          <small>Main sorting hub</small>
+        </div>
+
+        <div class="weather-card">
+          <span class="weather-icon">☀️</span>
+          <h3>Cagayan de Oro</h3>
+          <h2>30°C</h2>
+          <p>Sunny</p>
+          <small>Distribution point</small>
+        </div>
+
+        <div class="weather-card">
+          <span class="weather-icon">⛅</span>
+          <h3>Iligan City</h3>
+          <h2>28°C</h2>
+          <p>Mostly Cloudy</p>
+          <small>Destination</small>
+        </div>
+
+      </div>
+
+      <p class="weather-note">
+        Weather values are sample data for demonstration.
+      </p>
+
     </section>
-
-    <!-- FEATURES -->
-    <section class="features" id="about">
-
-      <article class="feature">
-        <div class="feature-icon">ϟ</div>
-        <div>
-          <b>Local Tracking</b>
-          <p>Follow parcel movement across Mindanao.</p>
-        </div>
-      </article>
-
-      <article class="feature">
-        <div class="feature-icon">✓</div>
-        <div>
-          <b>Safe &amp; Secure</b>
-          <p>Your shipment is in trusted hands.</p>
-        </div>
-      </article>
-
-      <article class="feature">
-        <div class="feature-icon">◎</div>
-        <div>
-          <b>Mindanao Coverage</b>
-          <p>One connected regional delivery network.</p>
-        </div>
-      </article>
-
-      <article class="feature" id="help">
-        <div class="feature-icon">☏</div>
-        <div>
-          <b>Customer Support</b>
-          <p>We're here to help with your delivery.</p>
-        </div>
-      </article>
-
-    </section>
-
-    <!-- FOOTER -->
-    <footer class="footer">
-
-      <a class="brand footer-brand" href="#">
-        <span class="brand-mark">◇</span>
-        ParcelTrack Mindanao
-      </a>
-
-      <p>Track. Know. Receive.</p>
-
-      <a class="footer-link" href="#coverage">
-        View Coverage →
-      </a>
-
-    </footer>
 
   </main>
 
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <h3>📦 ParcelTrack Mindanao</h3>
+    <p>Connecting deliveries across Mindanao, Philippines.</p>
+    <small>© 2026 ParcelTrack. All rights reserved.</small>
+  </footer>
+
+
+  <!-- JAVASCRIPT -->
   <script src="script.js"></script>
+
 </body>
 </html>
