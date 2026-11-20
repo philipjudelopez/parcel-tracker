@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,7 +64,7 @@
       <aside class="detail-column">
         <article class="info-panel tracking-panel">
           <div class="large-icon">📦</div>
-          <div class="tracking-info"><small>Tracking ID</small><h2 id="tracking-code">MND123456789</h2></div>
+          <div class="tracking-info"><small>Tracking ID</small><h2 id="tracking-code">MND123456789</h2><p class="tracking-route-meta">From <b id="origin-location">Davao City</b> · Next <b id="next-location">Manolo Fortich</b> · To <b id="destination-location">Iligan City</b></p></div>
           <span id="shipment-status" class="status-badge">In Transit</span>
         </article>
         <article class="info-panel route-panel">
@@ -132,6 +131,10 @@
     <footer id="about">Mindanao Parcel Tracker · Track. Know. Deliver. · Map data © OpenStreetMap contributors</footer>
   </main>
 </div>
+
+<!-- Notification Pop-up Container -->
+<div id="notification-container" class="notification-container" aria-live="polite" aria-atomic="false"></div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="script.js"></script>
 </body>
