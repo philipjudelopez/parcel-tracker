@@ -4,23 +4,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102b46">
   <title>ParcelTrack Mindanao</title>
+
+  <!-- Main stylesheet -->
   <link rel="stylesheet" href="styles.css">
+
+  <!-- Leaflet map stylesheet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  >
 </head>
 
 <body>
 
   <!-- HEADER -->
   <header class="header">
-    <div class="logo">
+    <a href="#home" class="logo">
       <span class="logo-icon">📦</span>
-      <div>
-        <h2>ParcelTrack</h2>
+      <span>
+        <strong>ParcelTrack</strong>
         <small>Mindanao Delivery Network</small>
-      </div>
-    </div>
+      </span>
+    </a>
 
-    <nav>
+    <nav class="navigation">
       <a href="#home">Home</a>
       <a href="#tracking">Track Parcel</a>
       <a href="#route">Delivery Route</a>
@@ -28,8 +38,7 @@
     </nav>
   </header>
 
-
-  <!-- HERO SECTION -->
+  <!-- HERO -->
   <section class="hero" id="home">
     <div class="hero-content">
       <span class="hero-label">MINDANAO PARCEL MONITORING</span>
@@ -37,11 +46,10 @@
       <h1>Track Your Parcel<br>Across Mindanao</h1>
 
       <p>
-        Monitor your shipment, view its delivery route,
-        and check estimated arrival information in real time.
+        Monitor your shipment, follow its delivery route,
+        and check weather conditions along the way.
       </p>
 
-      <!-- PARCEL SEARCH -->
       <form id="track-form" class="tracking-form">
         <input
           type="text"
@@ -50,7 +58,6 @@
           autocomplete="off"
           required
         >
-
         <button type="submit">Search Parcel</button>
       </form>
 
@@ -60,343 +67,162 @@
     </div>
   </section>
 
+  <main class="main-container">
 
-  <!-- TRACKING SECTION -->
-  <main class="main-container" id="tracking">
+    <!-- PARCEL TRACKING -->
+    <section class="section" id="tracking">
+      <div class="section-heading">
+        <span class="section-label">SHIPMENT INFORMATION</span>
+        <h2>Parcel Tracking Details</h2>
+        <p>Check your parcel's current status and estimated arrival.</p>
+      </div>
 
-    <section class="section-heading">
-      <span class="section-label">SHIPMENT INFORMATION</span>
-      <h2>Parcel Tracking Details</h2>
-      <p>View your parcel's current status and estimated delivery.</p>
+      <div class="tracking-card">
+
+        <div class="tracking-header">
+          <div>
+            <span class="small-label">TRACKING NUMBER</span>
+            <h3 id="tracking-code">MND123456789</h3>
+          </div>
+
+          <span id="shipment-status" class="status-badge">
+            In Transit
+          </span>
+        </div>
+
+        <div class="tracking-details">
+          <div class="detail-item">
+            <span class="small-label">ORIGIN</span>
+            <h3 id="origin-location">Davao City</h3>
+          </div>
+
+          <div class="detail-item">
+            <span class="small-label">DESTINATION</span>
+            <h3 id="destination-location">Iligan City</h3>
+          </div>
+
+          <div class="detail-item">
+            <span class="small-label">NEXT LOCATION</span>
+            <h3 id="next-location">Manolo Fortich</h3>
+          </div>
+        </div>
+
+        <!-- ETA -->
+        <div class="eta-box">
+          <div class="eta-heading">
+            <span class="eta-icon">🚚</span>
+            <div>
+              <span class="small-label">ESTIMATED ARRIVAL</span>
+              <h2 id="eta-date">November 22, 2026</h2>
+            </div>
+          </div>
+
+          <div class="eta-details">
+            <div>
+              <span class="small-label">Estimated Time</span>
+              <h3 id="eta-time">3:00 PM</h3>
+            </div>
+
+            <div>
+              <span class="small-label">Time Remaining</span>
+              <h3 id="remaining-time">2 days</h3>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </section>
 
-    <!-- SHIPMENT SUMMARY -->
-    <section class="tracking-card">
-
-      <div class="tracking-header">
-        <div>
-          <span class="small-label">TRACKING NUMBER</span>
-          <h3 id="tracking-code">MND123456789</h3>
-        </div>
-
-        <span id="shipment-status" class="status-badge">
-          In Transit
-        </span>
-      </div>
-
-      <div class="tracking-details">
-
-        <div class="detail-item">
-          <span class="small-label">ORIGIN</span>
-          <h3 id="origin-location">Davao City</h3>
-        </div>
-
-        <div class="detail-item">
-          <span class="small-label">DESTINATION</span>
-          <h3 id="destination-location">Iligan City</h3>
-        </div>
-
-        <div class="detail-item">
-          <span class="small-label">NEXT LOCATION</span>
-          <h3 id="next-location">Manolo Fortich</h3>
-        </div>
-
-      </div>
-
-      <!-- ETA -->
-      <div class="eta-box">
-        <div class="eta-heading">
-          <span>🚚</span>
-          <div>
-            <span class="small-label">ESTIMATED ARRIVAL</span>
-            <h2 id="eta-date">November 22, 2026</h2>
-          </div>
-        </div>
-
-        <div class="eta-details">
-          <div>
-            <span class="small-label">Estimated Time</span>
-            <h3 id="eta-time">3:00 PM</h3>
-          </div>
-
-          <div>
-            <span class="small-label">Time Remaining</span>
-            <h3 id="remaining-time">2 days</h3>
-          </div>
-        </div>
-      </div>
-
-    </section>
-
-
-    <!-- DELIVERY ROUTE -->
-    <section class="route-section" id="route">
-
+    <!-- DELIVERY ROUTE TIMELINE -->
+    <section class="section" id="route">
       <div class="section-heading">
         <span class="section-label">PARCEL JOURNEY</span>
         <h2>Delivery Route</h2>
         <p>Follow your parcel's journey through the Mindanao network.</p>
       </div>
 
-      <!-- ROUTE TIMELINE -->
-      <div class="route-track" id="route-track">
-
-        <div class="route-stop completed">
-          <div class="route-marker">✓</div>
-          <div class="route-info">
-            <h4>Davao City</h4>
-            <p>Parcel received</p>
-            <small>Origin facility</small>
-          </div>
-        </div>
-
-        <div class="route-stop current">
-          <div class="route-marker">●</div>
-          <div class="route-info">
-            <h4>Manolo Fortich</h4>
-            <p>Parcel sorting hub</p>
-            <small>Main distribution center</small>
-          </div>
-        </div>
-
-        <div class="route-stop">
-          <div class="route-marker">○</div>
-          <div class="route-info">
-            <h4>Cagayan de Oro</h4>
-            <p>Next distribution point</p>
-            <small>Regional facility</small>
-          </div>
-        </div>
-
-        <div class="route-stop">
-          <div class="route-marker">○</div>
-          <div class="route-info">
-            <h4>Iligan City</h4>
-            <p>Final destination</p>
-            <small>Awaiting delivery</small>
-          </div>
-        </div>
-
-      </div>
-
+      <div class="route-track" id="route-track"></div>
     </section>
 
-
-    <!-- MINDANAO MAP -->
-    <section class="map-section">
-
+    <!-- LEAFLET MAP -->
+    <section class="section">
       <div class="section-heading">
         <span class="section-label">LIVE ROUTE VISUALIZATION</span>
         <h2>Mindanao Delivery Map</h2>
         <p>
-          Visualize the parcel route and its distribution points
-          across Mindanao.
+          View parcel locations, the sorting hub, and the delivery route.
         </p>
       </div>
 
       <div class="map-container">
-
         <div class="map-header">
           <div>
             <h3>Parcel Route Overview</h3>
             <p>Mindanao, Philippines</p>
           </div>
 
-          <span class="map-status">
-            ● Route Monitoring
-          </span>
+          <span class="map-status">● Interactive Map</span>
         </div>
 
-        <div class="map-visual">
+        <div id="map" aria-label="Interactive parcel delivery map"></div>
 
-          <svg
-            id="map-route"
-            viewBox="0 0 800 520"
-            xmlns="http://www.w3.org/2000/svg"
-            role="img"
-            aria-label="Illustrative parcel route map across Mindanao"
-          >
-
-            <!-- MAP BACKGROUND -->
-            <rect
-              x="0"
-              y="0"
-              width="800"
-              height="520"
-              rx="16"
-              fill="#eaf4f7"
-            />
-
-            <!-- DECORATIVE GRID -->
-            <g stroke="#d7e7eb" stroke-width="1">
-              <path d="M0 100 H800 M0 200 H800 M0 300 H800 M0 400 H800"/>
-              <path d="M100 0 V520 M200 0 V520 M300 0 V520 M400 0 V520 M500 0 V520 M600 0 V520 M700 0 V520"/>
-            </g>
-
-            <!-- MINDANAO LAND SHAPE -->
-            <path
-              d="M180 80
-                 L260 55
-                 L330 85
-                 L410 70
-                 L490 100
-                 L550 145
-                 L625 160
-                 L660 220
-                 L625 280
-                 L650 335
-                 L590 390
-                 L530 420
-                 L470 460
-                 L400 445
-                 L350 480
-                 L285 440
-                 L230 410
-                 L180 350
-                 L130 300
-                 L145 230
-                 L110 180
-                 Z"
-              fill="#cce8d5"
-              stroke="#8bbfa0"
-              stroke-width="3"
-            />
-
-            <!-- ROUTE PATH -->
-            <path
-              id="route-base"
-              d="M260 370 L390 250 L500 200 L550 145"
-              fill="none"
-              stroke="#9bb4bd"
-              stroke-width="5"
-              stroke-dasharray="8 9"
-              stroke-linecap="round"
-            />
-
-            <path
-              id="route-progress"
-              d="M260 370 L390 250"
-              fill="none"
-              stroke="#1677d2"
-              stroke-width="6"
-              stroke-linecap="round"
-            />
-
-            <!-- ORIGIN MARKER -->
-            <circle cx="260" cy="370" r="12" fill="#16a36a" stroke="white" stroke-width="4"/>
-            <text x="230" y="402" font-size="15" font-weight="bold" fill="#24445a">
-              Davao City
-            </text>
-
-            <!-- HUB MARKER -->
-            <circle cx="390" cy="250" r="14" fill="#1677d2" stroke="white" stroke-width="4"/>
-            <text x="405" y="240" font-size="15" font-weight="bold" fill="#24445a">
-              Manolo Fortich
-            </text>
-
-            <!-- OTHER CITY MARKERS -->
-            <circle cx="500" cy="200" r="9" fill="#ffffff" stroke="#1677d2" stroke-width="4"/>
-            <text x="515" y="195" font-size="14" fill="#24445a">
-              Cagayan de Oro
-            </text>
-
-            <circle cx="550" cy="145" r="9" fill="#ffffff" stroke="#1677d2" stroke-width="4"/>
-            <text x="565" y="140" font-size="14" fill="#24445a">
-              Iligan City
-            </text>
-
-            <!-- MAP LABEL -->
-            <text
-              x="400"
-              y="490"
-              text-anchor="middle"
-              font-size="16"
-              font-weight="bold"
-              fill="#66818b"
-            >
-              MINDANAO DELIVERY NETWORK
-            </text>
-
-          </svg>
-
-        </div>
-
-        <!-- MAP LEGEND -->
         <div class="map-legend">
-          <div>
-            <span class="legend-dot origin-dot"></span>
-            <span>Origin</span>
-          </div>
-
-          <div>
-            <span class="legend-dot hub-dot"></span>
-            <span>Sorting Hub</span>
-          </div>
-
-          <div>
-            <span class="legend-dot destination-dot"></span>
-            <span>Destination</span>
-          </div>
+          <span><i class="legend-dot origin-dot"></i> Origin</span>
+          <span><i class="legend-dot hub-dot"></i> Sorting hub</span>
+          <span><i class="legend-dot destination-dot"></i> Destination</span>
+          <span><i class="legend-line"></i> Parcel route</span>
         </div>
-
       </div>
-
     </section>
 
-
-    <!-- WEATHER MONITORING -->
-    <section class="weather-section" id="weather">
-
+    <!-- WEATHER -->
+    <section class="section" id="weather">
       <div class="section-heading">
-        <span class="section-label">WEATHER MONITORING</span>
+        <span class="section-label">OPENWEATHER MONITORING</span>
         <h2>Weather Along the Route</h2>
-        <p>Weather conditions at important Mindanao delivery locations.</p>
+        <p>
+          Check current weather conditions at each delivery location.
+        </p>
       </div>
 
-      <div class="weather-grid">
+      <div class="weather-toolbar">
+        <span id="weather-updated">Weather data has not loaded yet.</span>
+        <button id="refresh-weather" class="secondary-button" type="button">
+          ↻ Refresh Weather
+        </button>
+      </div>
 
-        <div class="weather-card">
-          <span class="weather-icon">🌤️</span>
+      <div class="weather-grid" id="weather-grid">
+
+        <article class="weather-card" id="weather-davao">
           <h3>Davao City</h3>
-          <h2>29°C</h2>
-          <p>Partly Cloudy</p>
-          <small>Origin location</small>
-        </div>
+          <p class="weather-loading">Loading weather...</p>
+        </article>
 
-        <div class="weather-card">
-          <span class="weather-icon">🌦️</span>
+        <article class="weather-card" id="weather-manolo">
           <h3>Manolo Fortich</h3>
-          <h2>24°C</h2>
-          <p>Light Rain</p>
-          <small>Main sorting hub</small>
-        </div>
+          <p class="weather-loading">Loading weather...</p>
+        </article>
 
-        <div class="weather-card">
-          <span class="weather-icon">☀️</span>
+        <article class="weather-card" id="weather-cdo">
           <h3>Cagayan de Oro</h3>
-          <h2>30°C</h2>
-          <p>Sunny</p>
-          <small>Distribution point</small>
-        </div>
+          <p class="weather-loading">Loading weather...</p>
+        </article>
 
-        <div class="weather-card">
-          <span class="weather-icon">⛅</span>
+        <article class="weather-card" id="weather-iligan">
           <h3>Iligan City</h3>
-          <h2>28°C</h2>
-          <p>Mostly Cloudy</p>
-          <small>Destination</small>
-        </div>
+          <p class="weather-loading">Loading weather...</p>
+        </article>
 
       </div>
 
       <p class="weather-note">
-        Weather values are sample data for demonstration.
+        Weather information is retrieved from OpenWeatherMap.
+        Weather conditions may affect delivery schedules.
       </p>
-
     </section>
 
   </main>
-
 
   <!-- FOOTER -->
   <footer class="footer">
@@ -405,8 +231,13 @@
     <small>© 2026 ParcelTrack. All rights reserved.</small>
   </footer>
 
+  <!-- Leaflet library -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
 
-  <!-- JAVASCRIPT -->
+  <!-- Your JavaScript -->
   <script src="script.js"></script>
 
 </body>

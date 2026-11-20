@@ -1,210 +1,691 @@
 
-/* ==================================
-   PARCEL ROUTE AND ETA
-================================== */
+/* =========================
+   GLOBAL STYLES
+========================= */
+
+:root {
+  --navy: #102b46;
+  --blue: #1677d2;
+  --light-blue: #eaf4fb;
+  --green: #16a36a;
+  --text: #263849;
+  --muted: #718096;
+  --border: #e5ebf0;
+  --background: #f5f8fb;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+  background: var(--navy);
+  color: white;
+  padding: 16px 7%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  font-size: 32px;
+}
+
+.logo strong {
+  display: block;
+  font-size: 21px;
+}
+
+.logo small {
+  display: block;
+  color: #c1d1df;
+  font-size: 11px;
+}
+
+.navigation {
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+}
+
+.navigation a {
+  color: #e5edf5;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.navigation a:hover {
+  color: #71c3ff;
+}
+
+
+/* =========================
+   HERO
+========================= */
+
+.hero {
+  min-height: 390px;
+  display: flex;
+  align-items: center;
+  padding: 65px 8%;
+  color: white;
+  background:
+    linear-gradient(110deg, rgba(10, 34, 58, 0.97), rgba(15, 77, 119, 0.85)),
+    url("https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1600&q=80")
+    center/cover;
+}
+
+.hero-content {
+  width: 100%;
+  max-width: 720px;
+}
+
+.hero-label,
+.section-label {
+  display: inline-block;
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.hero-label {
+  color: #8bd0ff;
+}
+
+.hero h1 {
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.12;
+  margin: 16px 0;
+}
+
+.hero p {
+  color: #d6e5f1;
+  max-width: 580px;
+}
+
+.tracking-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+  max-width: 600px;
+}
+
+.tracking-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  outline: none;
+}
+
+.tracking-form input:focus {
+  border-color: #72c4ff;
+  box-shadow: 0 0 0 3px rgba(114, 196, 255, 0.2);
+}
+
+.tracking-form button {
+  padding: 14px 22px;
+  border: none;
+  border-radius: 8px;
+  background: var(--blue);
+  color: white;
+  font-weight: 700;
+}
+
+.tracking-form button:hover {
+  background: #0d64b8;
+}
+
+.form-message {
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+
+/* =========================
+   MAIN LAYOUT
+========================= */
+
+.main-container {
+  width: min(1200px, 90%);
+  margin: 45px auto;
+}
+
+.section {
+  margin-bottom: 55px;
+}
+
+.section-heading {
+  margin-bottom: 22px;
+}
+
+.section-heading h2 {
+  color: var(--navy);
+  font-size: clamp(23px, 3vw, 30px);
+  margin: 5px 0;
+}
+
+.section-heading p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.small-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+
+/* =========================
+   TRACKING CARD
+========================= */
+
+.tracking-card {
+  background: white;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 5px 22px rgba(16, 43, 70, 0.06);
+}
+
+.tracking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tracking-header h3 {
+  color: var(--navy);
+  margin-top: 5px;
+}
+
+.status-badge {
+  background: #e1f6eb;
+  color: #16834f;
+  padding: 7px 14px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tracking-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 24px 0;
+}
+
+.detail-item h3 {
+  color: var(--navy);
+  font-size: 17px;
+  margin-top: 6px;
+}
+
+
+/* =========================
+   ETA BOX
+========================= */
 
 .eta-box {
-  background: #eaf2ff;
-  border: 1px solid #d1e2ff;
-  border-radius: 14px;
-  padding: 13px;
-  margin-top: 15px;
+  background: var(--light-blue);
+  border-radius: 12px;
+  padding: 22px;
 }
 
-.eta-box span,
-.eta-box small {
-  display: block;
-  color: #536b9e;
-  font-size: 11px;
+.eta-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
-.eta-box strong {
-  display: block;
-  color: #075cf5;
-  font-size: 24px;
-  margin: 6px 0;
+.eta-icon {
+  font-size: 32px;
 }
 
-.eta-box small {
-  font-size: 11px;
+.eta-heading h2 {
+  color: var(--navy);
+  font-size: 22px;
+  margin-top: 3px;
 }
 
-.route-section {
-  padding: 14px;
-  border-right: 1px solid #d9e6ff;
+.eta-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 45px;
+  margin-top: 20px;
 }
 
-.route-section h3 {
-  font-size: 19px;
-  margin: 0 0 6px;
+.eta-details h3 {
+  color: var(--navy);
+  margin-top: 4px;
 }
 
-.section-description {
-  color: #7183a6;
-  font-size: 12px;
-  margin: 0 0 22px;
-}
+
+/* =========================
+   ROUTE TIMELINE
+========================= */
 
 .route-track {
-  position: relative;
-  padding-left: 4px;
+  display: flex;
+  gap: 0;
+  background: white;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 5px 22px rgba(16, 43, 70, 0.06);
+  overflow-x: auto;
 }
 
 .route-stop {
-  display: flex;
-  gap: 13px;
   position: relative;
-  min-height: 77px;
+  flex: 1;
+  min-width: 155px;
+  padding-right: 20px;
 }
 
 .route-stop:not(:last-child)::after {
   content: "";
   position: absolute;
-  left: 12px;
-  top: 28px;
-  height: 48px;
-  width: 3px;
-  background: #d5e2f8;
+  top: 17px;
+  left: 35px;
+  width: calc(100% - 40px);
+  height: 3px;
+  background: #dbe3e9;
 }
 
 .route-stop.completed:not(:last-child)::after {
-  background: #0878ff;
+  background: var(--green);
 }
 
 .route-marker {
   position: relative;
-  z-index: 1;
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #e3eaf7;
-  color: #8191ae;
-  font-size: 12px;
+  background: #edf1f4;
+  color: #8b99a5;
+  border: 2px solid #dbe3e9;
+  font-size: 13px;
 }
 
 .route-stop.completed .route-marker {
-  background: #0878ff;
+  background: var(--green);
   color: white;
+  border-color: var(--green);
 }
 
 .route-stop.current .route-marker {
-  background: #ffbb35;
+  background: var(--blue);
   color: white;
-  box-shadow: 0 0 0 5px #fff1cf;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 5px #d9ecff;
 }
 
-.route-stop b {
-  display: block;
-  font-size: 13px;
-  color: #102958;
-  margin-bottom: 4px;
+.route-info {
+  margin-top: 14px;
 }
 
-.route-stop small,
-.route-stop span {
-  display: block;
+.route-info h4 {
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.route-info p {
+  color: var(--text);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.route-info small {
+  color: var(--muted);
   font-size: 11px;
-  color: #687c9e;
-  line-height: 1.5;
 }
 
-.route-stop span {
-  color: #075cf5;
-  margin-top: 3px;
+
+/* =========================
+   MAP
+========================= */
+
+.map-container {
+  overflow: hidden;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 5px 22px rgba(16, 43, 70, 0.06);
 }
 
-/* MAP LEGEND */
-
-.map-legend {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
+.map-header {
+  padding: 20px;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  background: #071f4de8;
-  padding: 9px 12px;
-  border-radius: 10px;
-  color: white;
-  font-size: 10px;
+}
+
+.map-header h3 {
+  color: var(--navy);
+}
+
+.map-header p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.map-status {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#map {
+  width: 100%;
+  height: 520px;
+  background: #eaf4f7;
+  z-index: 1;
+}
+
+.map-legend {
+  padding: 16px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .map-legend span {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
 }
 
-.map-legend i {
-  width: 9px;
-  height: 9px;
+.legend-dot {
+  width: 11px;
+  height: 11px;
+  display: inline-block;
   border-radius: 50%;
 }
 
-.legend-origin {
-  background: #0878ff;
+.origin-dot {
+  background: var(--green);
 }
 
-.legend-hub {
-  background: #ffbd35;
+.hub-dot {
+  background: var(--blue);
 }
 
-.legend-destination {
-  background: #fff;
+.destination-dot {
+  background: #ed9a32;
 }
 
-/* SEARCH FEEDBACK */
-
-.form-hint.error {
-  color: #d32929 !important;
+.legend-line {
+  width: 20px;
+  height: 3px;
+  display: inline-block;
+  background: var(--blue);
 }
 
-.form-hint.success {
-  color: #08733d !important;
+
+/* =========================
+   WEATHER
+========================= */
+
+.weather-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
-/* RESPONSIVE ROUTE */
+.weather-toolbar span {
+  color: var(--muted);
+  font-size: 12px;
+}
 
-@media(max-width:1100px) {
+.secondary-button {
+  background: white;
+  color: var(--blue);
+  border: 1px solid #c9ddec;
+  border-radius: 7px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.secondary-button:hover {
+  background: var(--light-blue);
+}
+
+.weather-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.weather-card {
+  min-width: 0;
+  padding: 20px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 5px 22px rgba(16, 43, 70, 0.06);
+}
+
+.weather-card h3 {
+  color: var(--navy);
+  font-size: 15px;
+}
+
+.weather-card .weather-icon {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  margin: 8px 0;
+}
+
+.weather-card .temperature {
+  font-size: 30px;
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.weather-card .description {
+  color: var(--muted);
+  text-transform: capitalize;
+  font-size: 13px;
+}
+
+.weather-card .weather-extra {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+
+.weather-loading,
+.weather-error {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.weather-error {
+  color: #b54747;
+}
+
+.weather-note {
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer {
+  background: var(--navy);
+  color: white;
+  text-align: center;
+  padding: 32px 20px;
+}
+
+.footer h3 {
+  margin-bottom: 5px;
+}
+
+.footer p {
+  color: #c1d1df;
+  font-size: 13px;
+}
+
+.footer small {
+  display: block;
+  margin-top: 15px;
+  color: #9eb2c4;
+  font-size: 11px;
+}
+
+
+/* =========================
+   RESPONSIVE DESIGN
+========================= */
+
+@media (max-width: 900px) {
+  .weather-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .header {
+    padding: 16px 5%;
+  }
+
+  .navigation {
+    gap: 12px;
+  }
+
+  .navigation a {
+    font-size: 12px;
+  }
+
+  .hero {
+    padding: 50px 6%;
+  }
+
+  .tracking-form {
+    flex-direction: column;
+  }
+
+  .tracking-form button {
+    width: 100%;
+  }
+
+  .main-container {
+    width: 92%;
+  }
+
   .tracking-card {
-    grid-template-columns: 1fr 1fr;
+    padding: 20px;
   }
 
-  .map-panel {
-    grid-column: 1 / -1;
+  .tracking-details {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
-  .route-section {
-    border-right: 0;
+  .eta-details {
+    gap: 20px;
   }
-}
 
-@media(max-width:760px) {
-  .tracking-card {
+  .route-track {
+    flex-direction: column;
+    overflow: visible;
+    gap: 22px;
+  }
+
+  .route-stop {
+    display: flex;
+    gap: 15px;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .route-stop:not(:last-child)::after {
+    top: 35px;
+    left: 16px;
+    width: 3px;
+    height: calc(100% + 10px);
+  }
+
+  .route-info {
+    margin-top: 0;
+  }
+
+  #map {
+    height: 390px;
+  }
+
+  .weather-grid {
     grid-template-columns: 1fr;
   }
 
-  .shipment-summary {
-    border-bottom: 1px solid #d9e6ff;
-  }
-
-  .route-section {
-    padding: 15px 8px;
-  }
-
-  .map-panel {
-    grid-column: auto;
-    min-height: 340px;
-  }
-
-  .route-map {
-    min-height: 340px;
-  }
-
-  .eta-box {
-    max-width: 220px;
+  .tracking-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
