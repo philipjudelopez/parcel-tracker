@@ -751,3 +751,438 @@ html { scroll-padding-top: 18px; }
 .route-panel > div:last-child { min-width: 0; }
 .parcel-item { min-width: 0; }
 .weather-card { overflow-wrap: anywhere; }
+
+
+/* ==========================================
+   RESPONSIVE DESIGN
+   Desktop, Laptop, Tablet and Mobile
+========================================== */
+
+/* Prevent unwanted horizontal scrolling */
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+img,
+svg,
+canvas {
+    max-width: 100%;
+}
+
+/* Make form controls responsive */
+input,
+select,
+textarea,
+button {
+    max-width: 100%;
+    font: inherit;
+}
+
+button {
+    min-height: 40px;
+    cursor: pointer;
+}
+
+input,
+select,
+textarea {
+    min-width: 0;
+}
+
+/* Main application layout */
+.app-container,
+.app-layout,
+.dashboard-container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+/* Ensure dashboard columns can shrink */
+main,
+section,
+aside,
+.dashboard,
+.dashboard-content,
+.main-content {
+    min-width: 0;
+}
+
+/* Map sizing */
+#map {
+    width: 100%;
+    min-width: 0;
+    height: clamp(350px, 65vh, 750px);
+    z-index: 1;
+}
+
+/* Map and satellite controls */
+.map-controls {
+    position: absolute;
+    right: 15px;
+    bottom: 55px;
+    left: auto;
+    top: auto;
+    z-index: 1000;
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    padding: 5px;
+    border-radius: 28px;
+    background: rgba(4, 24, 43, 0.94);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+}
+
+.map-controls button {
+    min-height: 40px;
+    padding: 8px 13px;
+    border-radius: 22px;
+}
+
+/* Dashboard cards */
+.stats-container,
+.stats-grid,
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.card,
+.stat-card,
+.panel {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Tables */
+.table-container,
+.parcel-table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Forms */
+form {
+    min-width: 0;
+}
+
+.form-group {
+    min-width: 0;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    min-height: 44px;
+}
+
+/* Notifications */
+.notification-container {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 2147483000;
+    width: min(380px, calc(100vw - 30px));
+    max-width: calc(100vw - 30px);
+    pointer-events: none;
+}
+
+.notification,
+.toast {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    pointer-events: auto;
+}
+
+/* ==========================================
+   LAPTOPS AND SMALL DESKTOPS
+========================================== */
+
+@media (max-width: 1200px) {
+    .stats-container,
+    .stats-grid,
+    .dashboard-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard,
+    .dashboard-content {
+        gap: 15px;
+    }
+
+    #map {
+        height: 60vh;
+        min-height: 400px;
+    }
+}
+
+/* ==========================================
+   TABLETS
+========================================== */
+
+@media (max-width: 900px) {
+    .sidebar {
+        width: 220px;
+        min-width: 220px;
+    }
+
+    .main-content {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .dashboard,
+    .dashboard-content,
+    .main-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-container,
+    .stats-grid,
+    .dashboard-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #map {
+        height: 55vh;
+        min-height: 380px;
+    }
+}
+
+/* ==========================================
+   MOBILE PHONES
+========================================== */
+
+@media (max-width: 640px) {
+    body {
+        font-size: 14px;
+    }
+
+    /* Main layout */
+    .app-container,
+    .app-layout {
+        display: block;
+        width: 100%;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        height: auto;
+        position: relative;
+    }
+
+    /* Main content */
+    .main-content,
+    .dashboard-content,
+    main {
+        width: 100%;
+        padding: 12px;
+    }
+
+    /* Dashboard header */
+    .header,
+    .topbar,
+    .dashboard-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    h1 {
+        font-size: clamp(20px, 5vw, 27px);
+    }
+
+    h2 {
+        font-size: 19px;
+    }
+
+    h3 {
+        font-size: 16px;
+    }
+
+    /* Statistics */
+    .stats-container,
+    .stats-grid,
+    .dashboard-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .stat-card,
+    .card {
+        padding: 12px;
+    }
+
+    /* Dashboard panels */
+    .dashboard,
+    .dashboard-content,
+    .main-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* Map */
+    #map {
+        width: 100%;
+        height: 55vh;
+        min-height: 350px;
+        max-height: 520px;
+    }
+
+    .map-controls {
+        right: 10px;
+        bottom: 45px;
+        left: auto;
+        top: auto;
+        gap: 4px;
+    }
+
+    .map-controls button {
+        min-height: 38px;
+        padding: 7px 11px;
+        font-size: 12px;
+    }
+
+    /* Forms */
+    .form-row,
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .form-group {
+        width: 100%;
+    }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    /* Search bar */
+    .search-container,
+    .search-box {
+        width: 100%;
+    }
+
+    /* Parcel lists */
+    .parcel-list,
+    .parcel-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Tables */
+    .table-container,
+    .parcel-table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 550px;
+    }
+
+    /* Buttons */
+    button,
+    .btn {
+        min-height: 42px;
+    }
+
+    /* Notifications */
+    .notification-container {
+        top: 10px;
+        right: 10px;
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+    }
+
+    /* Weather cards */
+    .weather-grid,
+    .weather-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* ==========================================
+   VERY SMALL PHONES
+========================================== */
+
+@media (max-width: 380px) {
+    .stats-container,
+    .stats-grid,
+    .dashboard-stats,
+    .weather-grid,
+    .weather-container {
+        grid-template-columns: 1fr;
+    }
+
+    .main-content,
+    .dashboard-content,
+    main {
+        padding: 9px;
+    }
+
+    #map {
+        min-height: 300px;
+        height: 48vh;
+    }
+
+    .map-controls {
+        right: 7px;
+        bottom: 40px;
+    }
+
+    .map-controls button {
+        padding: 6px 9px;
+        font-size: 11px;
+    }
+}
+
+/* ==========================================
+   ACCESSIBILITY
+========================================== */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid #38bdf8;
+    outline-offset: 2px;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
