@@ -1,0 +1,360 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#075cf5">
+  <title>ParcelTrack | Track Your Parcel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="topbar">
+    <a class="brand" href="#">
+      <span class="brand-mark">◇</span> ParcelTrack
+    </a>
+
+    <nav class="navigation">
+      <a class="active" href="#tracking">⌂ Track Package</a>
+      <a href="#about">About</a>
+      <a href="#help">Help</a>
+      <a href="mailto:support@parceltrack.example">Contact</a>
+    </nav>
+
+    <div class="top-actions">
+      <button class="icon-button">♧</button>
+      <div class="avatar">👩🏻</div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero" id="tracking">
+
+    <div class="globe-art">
+      <div class="globe-grid"></div>
+      <div class="route-arc"></div>
+
+      <div class="hero-pin pin-beijing">
+        📍 <b>Beijing</b>
+        <span>☀️ 26°C · Sunny</span>
+      </div>
+
+      <div class="hero-pin pin-singapore">
+        📍 <b>Singapore</b>
+        <span>🌧 28°C · Light Rain</span>
+      </div>
+
+      <div class="hero-pin pin-manila">
+        📍 <b>Manila</b>
+        <span>⛈ 32°C · Thunderstorms</span>
+      </div>
+    </div>
+
+    <div class="hero-weather">
+      <span>Weather Overview</span>
+      <strong>32°C</strong>
+      <b>Partly Cloudy</b>
+      <small>Manila · Sample data</small>
+    </div>
+
+    <div class="hero-content">
+      <div class="eyebrow">
+        Real-Time Tracking <span>•</span> Weather Aware
+      </div>
+
+      <h1>
+        Track Your Parcel<br>
+        Anywhere, Anytime
+      </h1>
+
+      <p>
+        Get real-time updates and local weather
+        for every stop on your delivery journey.
+      </p>
+
+      <form class="track-form" id="track-form">
+        <span class="package-icon">◇</span>
+
+        <input
+          id="tracking-number"
+          type="text"
+          value="TRK123456789"
+          placeholder="Enter tracking number"
+          aria-label="Tracking number"
+        >
+
+        <button type="submit">
+          ⌕ <span>Track</span>
+        </button>
+      </form>
+
+      <p class="form-hint" id="form-message"></p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="page-content">
+
+    <section class="tracking-card">
+
+      <!-- Parcel Information -->
+      <div class="shipment-summary">
+
+        <span class="status-pill">
+          <i></i> In Transit
+        </span>
+
+        <h2 id="tracking-code">TRK123456789</h2>
+
+        <p>▣ &nbsp;Estimated Delivery</p>
+
+        <strong class="delivery-date">
+          ▣ &nbsp;Apr 25, 2025
+        </strong>
+
+        <div class="parcel-illustration">
+          <div class="parcel-tape"></div>
+        </div>
+
+      </div>
+
+      <!-- Tracking Timeline -->
+      <div class="timeline">
+
+        <div class="timeline-step complete">
+          <span class="step-dot">✓</span>
+          <div>
+            <b>Arrived at Sorting Facility</b>
+            <small>
+              Manila, Philippines · Apr 24, 2025, 3:15 PM
+            </small>
+          </div>
+        </div>
+
+        <div class="timeline-step complete">
+          <span class="step-dot">✓</span>
+          <div>
+            <b>Departed from Origin</b>
+            <small>
+              Singapore · Apr 23, 2025, 8:40 PM
+            </small>
+          </div>
+        </div>
+
+        <div class="timeline-step current">
+          <span class="step-dot">●</span>
+          <div>
+            <b>Shipment Picked Up</b>
+            <small>
+              Singapore · Apr 23, 2025, 6:20 PM
+            </small>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <span class="step-dot"></span>
+          <div>
+            <b>Label Created</b>
+            <small>
+              Apr 23, 2025, 4:12 PM
+            </small>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Route Map -->
+      <div class="map-panel">
+
+        <div class="map-heading">
+          <span class="live-dot"></span>
+          Live Route
+          <small>Illustrative route</small>
+        </div>
+
+        <svg
+          class="route-map"
+          viewBox="0 0 720 330"
+          role="img"
+          aria-label="Illustrative parcel delivery route"
+        >
+
+          <defs>
+            <linearGradient id="ocean" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#0d83d7"/>
+              <stop offset="1" stop-color="#052e79"/>
+            </linearGradient>
+
+            <pattern id="map-lines" width="48" height="48"
+              patternUnits="userSpaceOnUse">
+              <path d="M48 0H0V48"
+                fill="none"
+                stroke="#b7e7ff"
+                stroke-opacity=".12"/>
+            </pattern>
+
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="5" result="blur"/>
+              <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <rect width="720" height="330" fill="url(#ocean)"/>
+          <rect width="720" height="330" fill="url(#map-lines)"/>
+
+          <!-- Land Shapes -->
+          <g fill="#68c99b" stroke="#b8f0c7" stroke-width="2">
+
+            <path d="M40 0l52 7 16 27-18 24 16 25-20 31-27-7-13-35-23-22z"/>
+            <path d="M128 0l31 18 10 39-17 34-25-8-8-37z"/>
+            <path d="M210 0l36 12 22 33-18 35-29-11-24-34z"/>
+            <path d="M330 0l24 15 8 29-17 20-20-19z"/>
+            <path d="M395 0l39 16 25 36-14 25-33-9-23-32z"/>
+            <path d="M490 0l29 22 11 37-18 27-25-21-12-34z"/>
+            <path d="M560 0l49 12 27 33-19 32-35-10-29-34z"/>
+            <path d="M80 160l24-16 30 17 5 44-29 38-28-24z"/>
+            <path d="M180 150l35-20 29 26-8 46-34 31-30-39z"/>
+            <path d="M300 180l28-14 26 25-10 48-32 17-21-35z"/>
+            <path d="M440 140l32-18 23 28-9 46-33 15-22-32z"/>
+            <path d="M570 170l26-12 26 24-12 42-29 16-23-37z"/>
+
+          </g>
+
+          <!-- Flight Route -->
+          <path
+            d="M170 240 Q340 55 565 135"
+            fill="none"
+            stroke="#9deaff"
+            stroke-width="4"
+            stroke-dasharray="8 8"
+            filter="url(#glow)"
+          />
+
+          <path
+            d="M170 240 Q340 55 565 135"
+            fill="none"
+            stroke="#fff"
+            stroke-width="1.5"
+          />
+
+          <!-- Location Markers -->
+          <g transform="translate(170 240)">
+            <circle r="18" fill="#0878ff" opacity=".35"/>
+            <circle r="9" fill="#0878ff" stroke="#fff" stroke-width="3"/>
+            <text x="20" y="5" fill="#fff" font-size="14">
+              Singapore
+            </text>
+          </g>
+
+          <g transform="translate(565 135)">
+            <circle r="20" fill="#ff5261" opacity=".35"/>
+            <circle r="10" fill="#ff5261" stroke="#fff" stroke-width="3"/>
+            <text x="20" y="5" fill="#fff" font-size="14">
+              Manila
+            </text>
+          </g>
+
+          <g transform="translate(430 52)">
+            <circle r="8" fill="#f6b73c" stroke="#fff" stroke-width="3"/>
+            <text x="15" y="5" fill="#fff" font-size="13">
+              Beijing
+            </text>
+          </g>
+
+          <g fill="#fff" font-size="12">
+            <text x="24" y="300">
+              Shipment route · Flight path
+            </text>
+            <text x="24" y="318" opacity=".7">
+              Map illustration — not for navigation
+            </text>
+          </g>
+
+        </svg>
+
+        <!-- Weather Information -->
+        <div class="weather-list">
+
+          <div class="weather-stop">
+            <span>📍 Singapore</span>
+            <b>🌧 28°C</b>
+            <small>Light Rain</small>
+          </div>
+
+          <div class="weather-stop">
+            <span>📍 Manila</span>
+            <b>⛈ 32°C</b>
+            <small>Thunderstorms</small>
+          </div>
+
+          <div class="weather-stop">
+            <span>📍 Beijing</span>
+            <b>☀️ 26°C</b>
+            <small>Sunny</small>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="about">
+
+      <article class="feature">
+        <div class="feature-icon">ϟ</div>
+        <div>
+          <b>Real-Time Updates</b>
+          <p>Know exactly where your parcel is.</p>
+        </div>
+      </article>
+
+      <article class="feature">
+        <div class="feature-icon">✓</div>
+        <div>
+          <b>Safe &amp; Secure</b>
+          <p>Your shipment is in trusted hands.</p>
+        </div>
+      </article>
+
+      <article class="feature">
+        <div class="feature-icon">◎</div>
+        <div>
+          <b>Global Coverage</b>
+          <p>Track parcels worldwide with ease.</p>
+        </div>
+      </article>
+
+      <article class="feature" id="help">
+        <div class="feature-icon">☏</div>
+        <div>
+          <b>24/7 Support</b>
+          <p>We're here to help anytime.</p>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <a class="brand footer-brand" href="#">
+        <span class="brand-mark">◇</span> ParcelTrack
+      </a>
+
+      <p>Track. Know. Receive.</p>
+
+      <a class="footer-link" href="#about">
+        Learn More&nbsp; →
+      </a>
+    </footer>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
