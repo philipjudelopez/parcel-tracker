@@ -1,4 +1,3 @@
-
 :root {
   --navy: #102b46;
   --blue: #1677d2;
@@ -245,7 +244,7 @@ a {
   margin-top: 6px;
 }
 
-/* ETA */
+/* DISTANCE DISPLAY */
 
 .eta-box {
   background: var(--light-blue);
@@ -279,6 +278,17 @@ a {
 .eta-details h3 {
   color: var(--navy);
   margin-top: 4px;
+}
+
+.distance-box {
+  margin-top: 2px;
+}
+
+.distance-note {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 620px;
 }
 
 /* FORM FIELDS */
@@ -571,9 +581,17 @@ a {
   border-radius: 50%;
 }
 
-.origin-dot { background: var(--green); }
-.hub-dot { background: var(--blue); }
-.destination-dot { background: #ed9a32; }
+.origin-dot {
+  background: var(--green);
+}
+
+.hub-dot {
+  background: var(--blue);
+}
+
+.destination-dot {
+  background: #ed9a32;
+}
 
 .legend-line {
   width: 20px;
@@ -772,4 +790,23 @@ a {
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+/* AUTOMATIC ROUTE DISTANCE AND MAP PIN WEATHER */
+
+.leaflet-popup-content {
+  min-width: 180px;
+  line-height: 1.55;
+}
+
+.pin-weather {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #e5ebf0;
+  color: #526273;
+  font-size: 12px;
+}
+
+.pin-weather strong {
+  color: #102b46;
 }

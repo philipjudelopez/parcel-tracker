@@ -60,23 +60,17 @@ const sampleParcels = {
   MND123456789: {
     status: "In Transit",
     origin: "davao",
-    destination: "iligan",
-    etaDate: "2026-11-22",
-    etaTime: "15:00"
+    destination: "iligan"
   },
   MND987654321: {
     status: "In Transit",
     origin: "cdo",
-    destination: "butuan",
-    etaDate: "2026-11-21",
-    etaTime: "11:00"
+    destination: "butuan"
   },
   MND555666777: {
     status: "In Transit",
     origin: "gensan",
-    destination: "davao",
-    etaDate: "2026-11-21",
-    etaTime: "16:30"
+    destination: "davao"
   }
 };
 
@@ -95,7 +89,11 @@ function loadParcels() {
     if (saved) {
       const parsed = JSON.parse(saved);
 
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed)
+      ) {
         return parsed;
       }
     }
@@ -112,6 +110,7 @@ function saveParcels() {
       PARCEL_STORAGE_KEY,
       JSON.stringify(parcels)
     );
+
     return true;
   } catch (error) {
     console.error("Could not save parcel records:", error);
@@ -149,8 +148,14 @@ apiKeyForm.addEventListener("submit", function(event) {
     apiKeyMessage.textContent = "API key saved successfully.";
 
     loadAllWeather();
+
+    if (selectedTrackingNumber) {
+      updateMap(parcels[selectedTrackingNumber], null);
+    }
+
   } catch (error) {
-    apiKeyMessage.textContent = "Could not save API key in this browser.";
+    apiKeyMessage.textContent =
+      "Could not save API key in this browser.";
   }
 });
 
@@ -174,6 +179,10 @@ document
     apiKeyMessage.textContent = "API key removed.";
 
     loadAllWeather();
+
+    if (selectedTrackingNumber) {
+      updateMap(parcels[selectedTrackingNumber], null);
+    }
   });
 
 
@@ -235,8 +244,10 @@ function createParcelRoute(parcel) {
   addLocation(parcel.origin);
 
   // Manolo Fortich is the main sorting hub.
-  if (parcel.origin !== "manolo" &&
-      parcel.destination !== "manolo") {
+  if (
+    parcel.origin !== "manolo" &&
+    parcel.destination !== "manolo"
+  ) {
     addLocation("manolo");
   }
 
@@ -244,18 +255,21 @@ function createParcelRoute(parcel) {
 
   return routeKeys.map((key, index) => ({
     location: key,
+
     description:
       index === 0
         ? "Parcel received"
         : index === routeKeys.length - 1
           ? "Final destination"
           : "Parcel processed at sorting hub",
+
     detail:
       key === "manolo"
         ? "Main distribution center"
         : index === 0
           ? "Origin facility"
           : "Delivery facility",
+
     status:
       index === routeKeys.length - 1
         ? "current"
@@ -268,7 +282,7 @@ function createParcelRoute(parcel) {
    7. DISPLAY ROUTE ON MAP
 ========================================== */
 
-function updateMap(parcel) {
+function updateMap(parcel, routeData) {
   markerLayer.clearLayers();
 
   if (routeLine) {
@@ -308,21 +322,37 @@ function updateMap(parcel) {
         <strong>${place.name}</strong><br>
         ${stop.description}<br>
         <small>${stop.detail}</small>
+
+        <div class="pin-weather" id="pin-weather-${stop.location}">
+          <strong>Weather:</strong> Loading...
+        </div>
       `)
+      .on("popupopen", () => loadPinWeather(stop.location))
       .addTo(markerLayer);
   });
 
   if (coordinates.length > 1) {
-    routeLine = L.polyline(coordinates, {
+    const roadCoordinates =
+      routeData && routeData.geometry
+        ? routeData.geometry.coordinates.map(
+            point => [point[1], point[0]]
+          )
+        : coordinates;
+
+    routeLine = L.polyline(roadCoordinates, {
       color: "#1677d2",
       weight: 5,
       opacity: 0.85,
-      dashArray: "10, 8"
+      dashArray:
+        routeData && routeData.geometry
+          ? null
+          : "10, 8"
     }).addTo(map);
 
     map.fitBounds(routeLine.getBounds(), {
       padding: [45, 45]
     });
+
   } else if (coordinates.length === 1) {
     map.setView(coordinates[0], 10);
   }
@@ -348,6 +378,7 @@ function updateTimeline(parcel) {
 
     const marker = document.createElement("div");
     marker.className = "route-marker";
+
     marker.textContent =
       stop.status === "completed" ? "✓" : "●";
 
@@ -365,64 +396,112 @@ function updateTimeline(parcel) {
 
     info.append(heading, description, detail);
     element.append(marker, info);
+
     routeTrack.appendChild(element);
   });
 }
 
 
 /* ==========================================
-   9. ETA CALCULATION
+   9. AUTOMATIC ROAD ROUTE DISTANCE
+   Uses OSRM driving directions.
 ========================================== */
 
-function formatEta(date, time) {
-  const eta = new Date(`${date}T${time}:00`);
+function formatDistance(meters) {
+  if (!Number.isFinite(meters)) {
+    return "Unavailable";
+  }
 
-  if (Number.isNaN(eta.getTime())) {
+  if (meters < 1000) {
+    return `${Math.round(meters)} m`;
+  }
+
+  return `${(meters / 1000).toFixed(1)} km`;
+}
+
+
+async function calculateRoadRoute(route) {
+  const validPlaces = route
+    .map(stop => locations[stop.location])
+    .filter(Boolean);
+
+  if (validPlaces.length < 2) {
     return {
-      date: "Not available",
-      time: "Not available",
-      remaining: "Not available"
+      distance: 0,
+      geometry: null,
+      source: "single location"
     };
   }
 
-  const now = new Date();
-  const difference = eta.getTime() - now.getTime();
+  const coordinates = validPlaces
+    .map(place => `${place.lng},${place.lat}`)
+    .join(";");
 
-  const dateText = eta.toLocaleDateString("en-PH", {
-    year: "numeric",
-    month: "long",
-    day: "numeric"
-  });
+  const url =
+    `https://router.project-osrm.org/route/v1/driving/${coordinates}` +
+    "?overview=full&geometries=geojson&steps=false";
 
-  const timeText = eta.toLocaleTimeString("en-PH", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
+  try {
+    const response = await fetch(url);
 
-  let remaining;
-
-  if (difference <= 0) {
-    remaining = "ETA passed";
-  } else {
-    const totalMinutes = Math.ceil(difference / 60000);
-    const days = Math.floor(totalMinutes / 1440);
-    const hours = Math.floor((totalMinutes % 1440) / 60);
-    const minutes = totalMinutes % 60;
-
-    if (days > 0) {
-      remaining = `${days}d ${hours}h`;
-    } else if (hours > 0) {
-      remaining = `${hours}h ${minutes}m`;
-    } else {
-      remaining = `${minutes} minutes`;
+    if (!response.ok) {
+      throw new Error(
+        `Routing service error (${response.status})`
+      );
     }
-  }
 
-  return {
-    date: dateText,
-    time: timeText,
-    remaining
-  };
+    const data = await response.json();
+
+    if (
+      data.code !== "Ok" ||
+      !data.routes ||
+      !data.routes.length
+    ) {
+      throw new Error("No road route was returned.");
+    }
+
+    return {
+      distance: data.routes[0].distance,
+      geometry: data.routes[0].geometry,
+      source: "road route"
+    };
+
+  } catch (error) {
+    console.warn("Road route calculation failed:", error);
+
+    // Fallback: calculate straight-line distance.
+    let distance = 0;
+
+    const toRad = value => value * Math.PI / 180;
+
+    for (let i = 1; i < validPlaces.length; i++) {
+      const a = validPlaces[i - 1];
+      const b = validPlaces[i];
+
+      const dLat = toRad(b.lat - a.lat);
+      const dLng = toRad(b.lng - a.lng);
+
+      const h =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(a.lat)) *
+        Math.cos(toRad(b.lat)) *
+        Math.sin(dLng / 2) ** 2;
+
+      distance +=
+        6371000 *
+        2 *
+        Math.atan2(
+          Math.sqrt(h),
+          Math.sqrt(1 - h)
+        );
+    }
+
+    return {
+      distance,
+      geometry: null,
+      source: "straight-line estimate"
+    };
+  }
 }
 
 
@@ -430,7 +509,7 @@ function formatEta(date, time) {
    10. DISPLAY SELECTED PARCEL
 ========================================== */
 
-function displayParcel(trackingNumber) {
+async function displayParcel(trackingNumber) {
   const parcel = parcels[trackingNumber];
 
   const message = document.getElementById("form-message");
@@ -438,6 +517,7 @@ function displayParcel(trackingNumber) {
   if (!parcel) {
     message.textContent =
       "Tracking number not found. Please check and try again.";
+
     message.style.color = "#ffb7b7";
     return;
   }
@@ -446,18 +526,18 @@ function displayParcel(trackingNumber) {
   const destination = locations[parcel.destination];
 
   if (!origin || !destination) {
-    message.textContent = "This parcel has invalid location information.";
+    message.textContent =
+      "This parcel has invalid location information.";
     return;
   }
 
   selectedTrackingNumber = trackingNumber;
 
   const route = createParcelRoute(parcel);
+
   const nextLocation = route[1]
     ? locations[route[1].location].name
     : destination.name;
-
-  const eta = formatEta(parcel.etaDate, parcel.etaTime);
 
   document.getElementById("tracking-code").textContent =
     trackingNumber;
@@ -474,20 +554,42 @@ function displayParcel(trackingNumber) {
   document.getElementById("next-location").textContent =
     nextLocation;
 
-  document.getElementById("eta-date").textContent =
-    eta.date;
+  const distanceElement =
+    document.getElementById("route-distance");
 
-  document.getElementById("eta-time").textContent =
-    eta.time;
+  const distanceNote =
+    document.getElementById("route-distance-note");
 
-  document.getElementById("remaining-time").textContent =
-    eta.remaining;
+  distanceElement.textContent = "Calculating...";
 
-  message.textContent = "Parcel information loaded successfully.";
-  message.style.color = "#b9f3d1";
+  distanceNote.textContent =
+    "Requesting the road route between delivery locations.";
 
   updateTimeline(parcel);
-  updateMap(parcel);
+
+  // Draw route after road-distance lookup completes.
+  const routeData = await calculateRoadRoute(route);
+
+  // Avoid displaying an old result if the user selected
+  // a different parcel while the request was running.
+  if (selectedTrackingNumber !== trackingNumber) {
+    return;
+  }
+
+  distanceElement.textContent =
+    formatDistance(routeData.distance);
+
+  distanceNote.textContent =
+    routeData.source === "road route"
+      ? "Driving distance along the road route, including the Manolo Fortich sorting hub where applicable."
+      : "Road routing is temporarily unavailable. Showing a straight-line distance estimate, not road distance.";
+
+  message.textContent =
+    "Parcel information loaded successfully.";
+
+  message.style.color = "#b9f3d1";
+
+  updateMap(parcel, routeData);
   renderParcelList();
 }
 
@@ -515,7 +617,8 @@ document
    12. ADD NEW PARCEL
 ========================================== */
 
-const addParcelForm = document.getElementById("add-parcel-form");
+const addParcelForm =
+  document.getElementById("add-parcel-form");
 
 addParcelForm.addEventListener("submit", function(event) {
   event.preventDefault();
@@ -526,15 +629,18 @@ addParcelForm.addEventListener("submit", function(event) {
     .trim()
     .toUpperCase();
 
-  const origin = document.getElementById("parcel-origin").value;
-  const destination = document.getElementById("parcel-destination").value;
-  const etaDate = document.getElementById("parcel-eta-date").value;
-  const etaTime = document.getElementById("parcel-eta-time").value;
+  const origin =
+    document.getElementById("parcel-origin").value;
 
-  const message = document.getElementById("add-parcel-message");
+  const destination =
+    document.getElementById("parcel-destination").value;
 
-  if (!trackingNumber || !origin || !destination || !etaDate || !etaTime) {
-    message.textContent = "Please complete all parcel information.";
+  const message =
+    document.getElementById("add-parcel-message");
+
+  if (!trackingNumber || !origin || !destination) {
+    message.textContent =
+      "Please complete all parcel information.";
     return;
   }
 
@@ -545,7 +651,8 @@ addParcelForm.addEventListener("submit", function(event) {
   }
 
   if (parcels[trackingNumber]) {
-    message.textContent = "That tracking number already exists.";
+    message.textContent =
+      "That tracking number already exists.";
     return;
   }
 
@@ -555,30 +662,22 @@ addParcelForm.addEventListener("submit", function(event) {
     return;
   }
 
-  const eta = new Date(`${etaDate}T${etaTime}:00`);
-
-  if (Number.isNaN(eta.getTime()) || eta <= new Date()) {
-    message.textContent =
-      "Please select an estimated arrival time in the future.";
-    return;
-  }
-
   parcels[trackingNumber] = {
     status: "In Transit",
     origin,
-    destination,
-    etaDate,
-    etaTime
+    destination
   };
 
   if (!saveParcels()) {
     delete parcels[trackingNumber];
+
     message.textContent =
       "Could not save this parcel. Check your browser storage settings.";
     return;
   }
 
-  message.textContent = "Parcel added successfully!";
+  message.textContent =
+    "Parcel added successfully!";
 
   addParcelForm.reset();
 
@@ -604,7 +703,10 @@ function renderParcelList() {
 
   if (entries.length === 0) {
     const empty = document.createElement("p");
-    empty.textContent = "No parcels have been registered.";
+
+    empty.textContent =
+      "No parcels have been registered.";
+
     container.appendChild(empty);
     return;
   }
@@ -633,6 +735,7 @@ function renderParcelList() {
     actions.className = "parcel-item-actions";
 
     const viewButton = document.createElement("button");
+
     viewButton.type = "button";
     viewButton.textContent = "View Route";
 
@@ -691,19 +794,27 @@ function deleteParcel(trackingNumber) {
 
     if (firstRemaining) {
       displayParcel(firstRemaining);
+
     } else {
       selectedTrackingNumber = null;
 
-      document.getElementById("tracking-code").textContent = "No parcel selected";
-      document.getElementById("shipment-status").textContent = "No shipment";
+      document.getElementById("tracking-code").textContent =
+        "No parcel selected";
+
+      document.getElementById("shipment-status").textContent =
+        "No shipment";
+
       document.getElementById("origin-location").textContent = "—";
       document.getElementById("destination-location").textContent = "—";
       document.getElementById("next-location").textContent = "—";
-      document.getElementById("eta-date").textContent = "—";
-      document.getElementById("eta-time").textContent = "—";
-      document.getElementById("remaining-time").textContent = "—";
+
+      document.getElementById("route-distance").textContent = "—";
+
+      document.getElementById("route-distance-note").textContent =
+        "Select a parcel to calculate its route distance.";
 
       document.getElementById("route-track").replaceChildren();
+
       markerLayer.clearLayers();
 
       if (routeLine) {
@@ -763,7 +874,9 @@ async function getWeather(locationKey) {
         throw new Error("Weather API request limit reached.");
       }
 
-      throw new Error(`Weather service error (${response.status}).`);
+      throw new Error(
+        `Weather service error (${response.status}).`
+      );
     }
 
     const data = await response.json();
@@ -772,6 +885,7 @@ async function getWeather(locationKey) {
     const feelsLike = Math.round(data.main.feels_like);
     const humidity = data.main.humidity;
     const wind = data.wind.speed;
+
     const description = data.weather[0].description;
     const icon = data.weather[0].icon;
 
@@ -796,7 +910,10 @@ async function getWeather(locationKey) {
     `;
 
   } catch (error) {
-    console.error(`Weather error for ${place.name}:`, error);
+    console.error(
+      `Weather error for ${place.name}:`,
+      error
+    );
 
     card.innerHTML = `
       <h3>${place.name}</h3>
@@ -807,13 +924,88 @@ async function getWeather(locationKey) {
 
 
 /* ==========================================
+   15A. WEATHER STATUS FOR EACH MAP PIN
+========================================== */
+
+async function loadPinWeather(locationKey) {
+  const place = locations[locationKey];
+
+  if (!place) return;
+
+  const targetId = `pin-weather-${locationKey}`;
+  const target = document.getElementById(targetId);
+
+  if (!target) return;
+
+  const apiKey = getApiKey();
+
+  if (!apiKey) {
+    target.innerHTML =
+      "<strong>Weather:</strong> Add your OpenWeatherMap API key in Settings.";
+
+    return;
+  }
+
+  target.innerHTML =
+    "<strong>Weather:</strong> Loading current conditions...";
+
+  try {
+    const url =
+      "https://api.openweathermap.org/data/2.5/weather" +
+      `?lat=${place.lat}&lon=${place.lng}` +
+      `&appid=${encodeURIComponent(apiKey)}&units=metric`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Invalid API key");
+      }
+
+      throw new Error(
+        `Weather unavailable (${response.status})`
+      );
+    }
+
+    const data = await response.json();
+
+    const condition =
+      data.weather && data.weather[0]
+        ? data.weather[0].description
+        : "Conditions unavailable";
+
+    const temperature = Math.round(data.main.temp);
+    const humidity = data.main.humidity;
+
+    const currentTarget = document.getElementById(targetId);
+
+    if (currentTarget) {
+      currentTarget.innerHTML =
+        `<strong>Weather:</strong> ${temperature}°C, ${condition}` +
+        `<br>Humidity: ${humidity}%`;
+    }
+
+  } catch (error) {
+    const currentTarget = document.getElementById(targetId);
+
+    if (currentTarget) {
+      currentTarget.innerHTML =
+        `<strong>Weather:</strong> ${error.message}`;
+    }
+  }
+}
+
+
+/* ==========================================
    16. LOAD ALL WEATHER CARDS
 ========================================== */
 
 async function loadAllWeather() {
-  const updatedLabel = document.getElementById("weather-updated");
+  const updatedLabel =
+    document.getElementById("weather-updated");
 
-  updatedLabel.textContent = "Updating weather information...";
+  updatedLabel.textContent =
+    "Updating weather information...";
 
   const weatherLocations = [
     "davao",
